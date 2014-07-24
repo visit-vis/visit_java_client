@@ -23,11 +23,11 @@ import com.jcraft.jsch.UserInfo;
  * @author hari
  *
  */
-public class VisItRemoteConnectionUserInfoDialog implements UserInfo, UIKeyboardInteractive
+public class VisItRemoteUserInfoDialog implements UserInfo, UIKeyboardInteractive
 {
 	Shell s;
 	
-	public VisItRemoteConnectionUserInfoDialog(Shell shell) {
+	public VisItRemoteUserInfoDialog(Shell shell) {
 		s = shell;
 	}
 	
@@ -194,5 +194,6 @@ public class VisItRemoteConnectionUserInfoDialog implements UserInfo, UIKeyboard
 	 */
 	public String[] promptKeyboardInteractive(String destination,
 			String name, String instruction, String[] prompt, boolean[] echo) {
+				return null;
 	}
 }

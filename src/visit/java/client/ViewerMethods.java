@@ -5,11 +5,9 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Vector;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
 
 import visit.java.client.AttributeSubject.AttributeSubjectCallback;
 

@@ -5,8 +5,11 @@ import gov.lbnl.visit.swt.VisItSwtConnection.VisualizationUpdateCallback;
 
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
-import java.util.Vector;
+import java.util.HashMap;
 
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.jface.window.Window;
+import org.eclipse.jface.wizard.WizardDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
@@ -14,7 +17,6 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
@@ -29,7 +31,6 @@ import com.google.gson.JsonSyntaxException;
 
 import visit.java.client.AttributeSubject;
 import visit.java.client.AttributeSubject.AttributeSubjectCallback;
-import visit.java.client.Transformation;
 import visit.java.client.ViewerMethods;
 import visit.java.client.ViewerState;
 
@@ -403,19 +404,6 @@ public class VisItSwtWidget extends Canvas implements Listener,
 
 	/**
 	 * 
-	 */
-//	private void sync() {
-//		openDatabaseInfo = null;
-//		try {
-//			getViewerMethods().Synchronize();
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//	}
-
-	/**
-	 * 
 	 * @param direction
 	 */
 	public void zoom(String direction) {
@@ -509,7 +497,6 @@ public class VisItSwtWidget extends Canvas implements Listener,
 		}
 		
 		final byte[] output = rawData;
-		// TODO Auto-generated method stub
 		Display.getDefault().asyncExec(new Runnable() {
 			public void run() {
 				ByteArrayInputStream bis = new ByteArrayInputStream(
@@ -610,4 +597,101 @@ public class VisItSwtWidget extends Canvas implements Listener,
 //		  display.dispose ();
 		}
 		}
+	
+	static public void main(String[] args) {
+		Display display = new Display();
+		
+		
+		Shell shell = new Shell(display);
+		VisItSwtLaunchWizard wizard = new VisItSwtLaunchWizard();
+		WizardDialog dialog = new WizardDialog(shell, wizard);
+
+		if(dialog.open() == Window.CANCEL)
+			return;
+		
+		/// input..
+		HashMap<String, String> inputMap = new HashMap<String, String>();
+        inputMap.put("username", "user1");
+        inputMap.put("password", wizard.getPage().getPassword());
+        inputMap.put("dataType", "image");
+        inputMap.put("windowWidth", "1340");
+        inputMap.put("windowHeight", "1020");
+        inputMap.put("windowId", "1");
+        inputMap.put("gateway", wizard.getPage().getGateway());
+        inputMap.put("localGatewayPort", wizard.getPage().getGatewayPort());
+        inputMap.put("useTunneling", wizard.getPage().getUseTunneling());
+        inputMap.put("url", wizard.getPage().getHostname());
+        inputMap.put("port", wizard.getPage().getVisItPort());
+        inputMap.put("visDir", wizard.getPage().getVisItDir());
+        inputMap.put("isRemote", wizard.getPage().getIsRemote());
+        
+        
+        VisItSwtConnection vizConnection = new VisItSwtConnection(new Shell(display));
+        
+        /// parse parameters..
+        String username = inputMap.get("username");
+        String password = inputMap.get("password");
+        String dataType = inputMap.get("dataType");
+        
+        int windowId = Integer.parseInt(inputMap.get("windowId"));
+        int windowWidth = Integer.parseInt(inputMap.get("windowWidth"));
+        int windowHeight = Integer.parseInt(inputMap.get("windowHeight"));
+        String gateway = inputMap.get("gateway");
+        
+        int localGatewayPort = -1;
+        
+        if(!gateway.isEmpty()) {
+        	localGatewayPort = Integer.parseInt(inputMap.get("localGatewayPort"));
+        }
+        
+        String useTunneling = inputMap.get("useTunneling");
+        String url = inputMap.get("url");
+        
+        int port = Integer.parseInt(inputMap.get("port"));
+        String visDir = inputMap.get("visDir");
+        boolean isRemote = Boolean.valueOf(inputMap.get("isRemote"));
+
+        // Set the parameters on the widget
+        vizConnection.setParameters(username,
+                                    password,
+                                    VisItSwtConnection.VISIT_CONNECTION_TYPE.IMAGE,
+                                    windowWidth,
+                                    windowHeight,
+                                    windowId);
+
+        // Setup a remote gateway if needed
+        if (!gateway.isEmpty()) {
+            vizConnection.setGateway(gateway, localGatewayPort);
+        }
+
+        // Enable tunneling if needed
+        vizConnection.useTunneling(Boolean.valueOf(useTunneling));
+
+        // Launch the VisIt widget
+        System.out.println(url + " "  + port + " " + password + " " + visDir + " " + isRemote);
+        boolean result = vizConnection.launch(url, port, password, visDir,
+                isRemote);
+		
+        // failed connection, etc.)
+        if (!result) {
+            if (isRemote) {
+                MessageDialog.openError(shell,
+                        "Failed to Connect to VisIt",
+                        "Unable to connect to a running VisIt client.");
+            } else {
+                MessageDialog.openError(shell,
+                        "Failed to Launch VisIt",
+                        "VisIt has failed to launch.");
+            }
+        }
+        
+        VisItSwtWidget widget = new VisItSwtWidget(shell, SWT.BORDER);
+        widget.setVisItSwtConnection(vizConnection, 1, 400, 400);
+        shell.open();
+
+        while (!shell.isDisposed ()) {
+			if (!display.readAndDispatch ()) display.sleep ();
+		}
+		display.dispose ();
+	}
 }

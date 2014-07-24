@@ -259,7 +259,6 @@ public class VisItSwtConnection implements VisItInitializedCallback,
 			Thread thread = new Thread(new Runnable() {
 
 				@SuppressWarnings("unused")
-				@Override
 				public void run() {
 					try {
 						process = builder.start();
@@ -338,7 +337,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
 
 				// currently assume gateway username is same as remote
 				// username..
-				UserInfo ui = new VisItRemoteConnectionUserInfoDialog(shell);
+				UserInfo ui = new VisItRemoteUserInfoDialog(shell);
 
 				if (m_gateway.length() > 0) {
 					// connect default port 22..
