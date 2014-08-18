@@ -69,7 +69,7 @@ public class AttributeSubject {
 			for (AttributeSubjectCallback cb : callbackList) {
 				try {
 					cb.update(this);
-				}catch(Exception e) {
+				} catch (Exception e) {
 					System.err.println("a callback failed to update..");
 					e.printStackTrace();
 				}
@@ -100,18 +100,18 @@ public class AttributeSubject {
 	 */
 	private boolean typeEquals(JsonElement a, JsonElement b) {
 		if (a.isJsonNull() && b.isJsonNull() || a.isJsonArray()
-				&& b.isJsonArray() || a.isJsonArray() && b.isJsonArray())
+				&& b.isJsonArray() || a.isJsonArray() && b.isJsonArray()) {
 			return true;
-
+		}
 		if (a.isJsonPrimitive() && b.isJsonPrimitive()) {
 			JsonPrimitive ap = a.getAsJsonPrimitive();
 			JsonPrimitive bp = b.getAsJsonPrimitive();
 			if ((ap.isBoolean() && bp.isBoolean())
 					|| (ap.isNumber() && bp.isNumber())
-					|| (ap.isString() && bp.isString()))
+					|| (ap.isString() && bp.isString())) {
 				return true;
+			}
 		}
-
 		return false;
 	}
 
@@ -122,7 +122,8 @@ public class AttributeSubject {
 	 */
 	public void set(String key, JsonElement value) {
 
-		int index = getApi().get(key).getAsJsonObject().get("attrId").getAsInt();
+		int index = getApi().get(key).getAsJsonObject().get("attrId")
+				.getAsInt();
 		JsonElement p = getData().get(index);
 
 		// Check if they are the same type..
@@ -143,19 +144,22 @@ public class AttributeSubject {
 	 */
 	public JsonElement get(String key) {
 
-		int index = getApi().get(key).getAsJsonObject().get("attrId").getAsInt();
-		String type = getApi().get(key).getAsJsonObject().get("type").getAsString();
-		
+		int index = getApi().get(key).getAsJsonObject().get("attrId")
+				.getAsInt();
+		String type = getApi().get(key).getAsJsonObject().get("type")
+				.getAsString();
+
 		if (update.contains(index)) {
 			return update.get(index);
 		}
-		if(type.indexOf("AttributeGroup") >= 0) {
-			if(type.indexOf("List") >= 0 || type.indexOf("Vector") >= 0 ) {
+		if (type.indexOf("AttributeGroup") >= 0) {
+			if (type.indexOf("List") >= 0 || type.indexOf("Vector") >= 0) {
 				JsonArray data = getData().get(index).getAsJsonArray();
 				JsonArray tmpArray = new JsonArray();
-				for(int i = 0; i < data.size(); ++i) {
+				for (int i = 0; i < data.size(); ++i) {
 					JsonObject obj = new JsonObject();
-					obj.add("api", getApi().get(key).getAsJsonObject().get("api"));
+					obj.add("api",
+							getApi().get(key).getAsJsonObject().get("api"));
 					obj.add("data", data.get(i));
 					tmpArray.add(obj);
 				}
@@ -169,30 +173,32 @@ public class AttributeSubject {
 		}
 		return getData().get(index);
 	}
-	
+
 	public JsonElement getAttr(JsonElement obj, String key) {
-		
-		if(!obj.isJsonObject() && !obj.getAsJsonObject().has("api")) {
+
+		if (!obj.isJsonObject() && !obj.getAsJsonObject().has("api")) {
 			return JsonNull.INSTANCE;
 		}
-		
+
 		JsonObject attr = obj.getAsJsonObject();
-		
+
 		JsonObject api = attr.get("api").getAsJsonObject();
 		JsonArray data = attr.get("data").getAsJsonArray();
-		
-		if(api.has(key)) {
+
+		if (api.has(key)) {
 			int index = api.get(key).getAsJsonObject().get("attrId").getAsInt();
-			String type = api.get(key).getAsJsonObject().get("type").getAsString();
-			
-			/// if this recurses further return that instead..
-			if(type.indexOf("AttributeGroup") >= 0) {
-				if(type.indexOf("List") >= 0 || type.indexOf("Vector") >= 0 ) {
+			String type = api.get(key).getAsJsonObject().get("type")
+					.getAsString();
+
+			// / if this recurses further return that instead..
+			if (type.indexOf("AttributeGroup") >= 0) {
+				if (type.indexOf("List") >= 0 || type.indexOf("Vector") >= 0) {
 					JsonArray cdata = data.get(index).getAsJsonArray();
 					JsonArray ctmpArray = new JsonArray();
-					for(int i = 0; i < cdata.size(); ++i) {
+					for (int i = 0; i < cdata.size(); ++i) {
 						JsonObject cobj = new JsonObject();
-						cobj.add("api", api.get(key).getAsJsonObject().get("api"));
+						cobj.add("api",
+								api.get(key).getAsJsonObject().get("api"));
 						cobj.add("data", data.get(i));
 						ctmpArray.add(cobj);
 					}
@@ -204,10 +210,10 @@ public class AttributeSubject {
 					return cobj;
 				}
 			}
-			
+
 			return data.get(index);
 		}
-		
+
 		return JsonNull.INSTANCE;
 	}
 

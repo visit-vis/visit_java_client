@@ -24,13 +24,8 @@ public class VisItClient {
 
 		VisItProxy client = new VisItProxy();
 
-		client.setParameters("user1", 
-							 "fluffy", 
-							 "none",
-							 600, 
-							 600, 
-							 1);
-		
+		client.setParameters("user1", "fluffy", "none", 600, 600, 1);
+
 		if (!client.connect("localhost", 9002)) {
 			System.out.println("Could not connect to VisIt, Quitting");
 			System.exit(0);
@@ -49,18 +44,18 @@ public class VisItClient {
 			CurLine = in.readLine().trim();
 
 			try {
-				if ((CurLine.equals("quit()")))
+				if ((CurLine.equals("quit()"))) {
 					continue;
-
-				if ("InvertBackgroundColor()".equals(CurLine))
+				}
+				if ("InvertBackgroundColor()".equals(CurLine)) {
 					methods.invertBackgroundColor();
-
-				if ("AddWindow()".equals(CurLine))
+				}
+				if ("AddWindow()".equals(CurLine)) {
 					methods.addWindow();
-
-				if ("DrawPlots()".equals(CurLine))
+				}
+				if ("DrawPlots()".equals(CurLine)) {
 					methods.drawPlots();
-
+				}
 				if (CurLine.startsWith("OpenDatabase")) {
 					String ss = CurLine.substring(CurLine.indexOf("\"") + 1,
 							CurLine.lastIndexOf("\""));
@@ -72,10 +67,10 @@ public class VisItClient {
 					is = is.replace("\"", "");
 
 					String[] results = is.split(",");
-					if (results.length == 2)
+					if (results.length == 2) {
 						methods.addPlot(results[0], results[1]);
+					}
 				}
-
 				if (CurLine.startsWith("AddOperator")) {
 					String is = CurLine.substring(CurLine.indexOf("(") + 1,
 							CurLine.indexOf(")"));
@@ -83,12 +78,14 @@ public class VisItClient {
 					methods.addOperator(is);
 				}
 
-				if (CurLine.startsWith("DeleteActivePlots()"))
+				if (CurLine.startsWith("DeleteActivePlots()")) {
 					methods.deleteActivePlots();
+				}
 
-				if (CurLine.startsWith("HideActivePlots()"))
+				if (CurLine.startsWith("HideActivePlots()")) {
 					methods.hideActivePlots();
-
+				}
+				
 				if (CurLine.startsWith("SetActivePlots")) {
 					String is = CurLine.substring(CurLine.indexOf("(") + 1,
 							CurLine.indexOf(")"));

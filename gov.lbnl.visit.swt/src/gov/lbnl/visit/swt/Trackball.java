@@ -7,7 +7,7 @@ import visit.java.client.Transformation;
 
 /**
  * @author hari
- *
+ * 
  */
 public class Trackball {
 	/**
@@ -77,8 +77,9 @@ public class Trackball {
 	 */
 	public void move(int x, int y) {
 
-		if (!moving)
+		if (!moving) {
 			return;
+		}
 
 		double xp = ((double) x - ((double) screenWidth * .5))
 				/ (double) radius;

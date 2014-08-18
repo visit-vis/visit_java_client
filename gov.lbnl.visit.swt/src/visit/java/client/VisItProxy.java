@@ -5,6 +5,7 @@
 package visit.java.client;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.jcraft.jsch.Session;
@@ -16,6 +17,7 @@ import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.ConnectException;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.*;
 
 /**
@@ -46,6 +48,11 @@ public class VisItProxy {
 	 */
 	private String visit_security_key;
 
+	/**
+	 * 
+	 */
+	private HashMap<String, Integer> visitRPC;
+	
 	/**
 	 * 
 	 */
@@ -143,9 +150,20 @@ public class VisItProxy {
 			writer.flush();
 
 			// System.out.println("Reading...");
-			char[] cbuf = new char[1024];
-			int len = reader.read(cbuf);
-			String message = new String(cbuf, 0, len);
+			String message = "";
+			
+			int len = 0;
+			do {
+				char[] cbuf = new char[1024];
+				len = reader.read(cbuf);
+				
+				if(len <= 0)
+					break;
+				
+				String msg = new String(cbuf, 0, len);
+				message += msg;
+				
+			} while(len > 0);
 
 			// System.out.println("raw message: " + message);
 			JsonElement e = gson.fromJson(message, JsonElement.class);
@@ -154,7 +172,13 @@ public class VisItProxy {
 			visit_host = jo.get("host").getAsString();
 			visit_port = jo.get("port").getAsString();
 			visit_security_key = jo.get("securityKey").getAsString();
-
+			JsonArray visit_rpc = jo.get("rpc_array").getAsJsonArray();
+			
+			visitRPC = new HashMap<String, Integer>();
+			for(int i = 0; i < visit_rpc.size(); ++i) {
+				visitRPC.put(visit_rpc.get(i).getAsString(), i);
+			}
+			
 			if (m_useTunnel) {
 				m_tunnelSession.setPortForwardingL(
 						Integer.parseInt(visit_port), "localhost",
@@ -180,7 +204,7 @@ public class VisItProxy {
 		}
 		return false;
 	}
-	
+
 	Semaphore sem = new Semaphore(0);
 
 	/**
@@ -191,9 +215,9 @@ public class VisItProxy {
 	 * @return
 	 */
 	public boolean connect(String host, int port) {
-		if (!handshake(host, port))
+		if (!handshake(host, port)) {
 			return false;
-
+		}
 		try {
 
 			inputSocket = new Socket(m_useTunnel ? "localhost" : visit_host,
@@ -230,29 +254,29 @@ public class VisItProxy {
 			// System.out.println("wrote: " + new String(cbuf));
 			// End - Handle initial connection
 			state = new ViewerState();
-		
+
 			state.setConnection(outputConnection);
 
-			
 			thread_runnable = new VisItThread(inputConnection);
 			thread = new Thread(thread_runnable);
 			thread.setDaemon(true);
 			thread.start();
 
-			/**! block until all data is in */
+			/** ! block until all data is in */
 			sem.acquire();
 
 			if (callback != null) {
 				callback.initialized();
 			}
 			
-			methods = new ViewerMethods(state);
-			
+			methods = new ViewerMethods(state, visitRPC);
+
 			System.out.println("Viewer State synched..");
 
 		} catch (Exception e) {
-			e.printStackTrace();
 			System.out.println("Exception connecting..");
+			e.printStackTrace();
+			return false;
 		}
 		return true;
 	}
@@ -422,18 +446,19 @@ public class VisItProxy {
 							try {
 								partial_entry.setLength(0);
 								// tmp=tmp.replace("\n","");
-								tmp=tmp.replace("\\\"","");
+								tmp = tmp.replace("\\\"", "");
 								JsonElement el = gson.fromJson(tmp,
 										JsonElement.class);
 								JsonObject jo = el.getAsJsonObject();
 
 								// update state..
 								VisItProxy.this.state.update(jo);
-								if(VisItProxy.this.state.states.size() == MAX_STATES) {
-									System.out.println("Maximum States Reached");
+								if (VisItProxy.this.state.states.size() == MAX_STATES) {
+									System.out
+											.println("Maximum States Reached");
 									sem.release();
 								}
-								
+
 							} catch (Exception e) {
 								System.out.println("failed input " + tmp);
 							}

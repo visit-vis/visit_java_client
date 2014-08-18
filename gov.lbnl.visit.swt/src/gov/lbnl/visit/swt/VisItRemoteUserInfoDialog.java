@@ -39,7 +39,6 @@ public class VisItRemoteUserInfoDialog implements UserInfo, UIKeyboardInteractiv
 		messageBox.setText("Warning");
 		
 		int response = messageBox.open();
-		System.out.println(SWT.YES + " " + response);
 		return response == SWT.YES;
 	}
 
@@ -194,6 +193,13 @@ public class VisItRemoteUserInfoDialog implements UserInfo, UIKeyboardInteractiv
 	 */
 	public String[] promptKeyboardInteractive(String destination,
 			String name, String instruction, String[] prompt, boolean[] echo) {
-				return null;
+		
+		boolean result = promptPassword("Enter password");
+		
+		if(result) {
+			return new String[] { getPassword() };
+		}
+		
+		return null;
 	}
 }

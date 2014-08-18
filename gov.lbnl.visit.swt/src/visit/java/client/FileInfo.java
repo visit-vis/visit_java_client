@@ -1,7 +1,7 @@
 /**
  * 
  */
-package gov.lbnl.visit.swt;
+package visit.java.client;
 
 import java.util.ArrayList;
 

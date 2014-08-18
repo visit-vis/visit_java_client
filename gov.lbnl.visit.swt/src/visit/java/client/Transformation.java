@@ -116,7 +116,7 @@ public class Transformation {
 			double ux = vec.get(0);
 			double uy = vec.get(1);
 			double uz = vec.get(2);
-			
+
 			double sin_theta = Math.sin(theta);
 			double cos_theta = Math.cos(theta);
 			double one_minus_cos_theta = (1 - Math.cos(theta));
@@ -291,7 +291,7 @@ public class Transformation {
 
 			return;
 		}
-		
+
 		public Vector3D normalized() {
 
 			Vector3D n = new Vector3D();
@@ -447,9 +447,9 @@ public class Transformation {
 
 			double d = length();
 
-			if (d == 0.0)
+			if (d == 0.0) {
 				d = 1.0;
-
+			}
 			for (int i = 0; i < size(); i++) {
 				v[i] /= d;
 			}
@@ -691,7 +691,7 @@ public class Transformation {
 				}
 			}
 		}
-		
+
 		public MatrixN transposed() {
 
 			MatrixN tmp = new MatrixN(size());
