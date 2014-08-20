@@ -12,13 +12,16 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+
 import visit.java.client.AttributeSubject;
 import visit.java.client.AttributeSubject.AttributeSubjectCallback;
 import visit.java.client.FileInfo;
@@ -144,7 +147,7 @@ public class VisItSwtWidget extends Canvas implements Listener,
 					throw new Exception("Could not create new window");
 				}
 
-				visitWindowId = (int) s1.toArray()[0];
+				visitWindowId = (Integer) s1.toArray()[0];
 			}
 		}
 
@@ -156,13 +159,29 @@ public class VisItSwtWidget extends Canvas implements Listener,
 		visitConnection.registerCallback("avtDatabaseMetaData", this);
 		initialized = true;
 
-		// getViewerMethods().resizeWindow(windowId, windowWidth, windowHeight);
+		getViewerMethods().resizeWindow(windowId, windowWidth, windowHeight);
+
 		// / for now use static size that seems to give good performance
 		// / the rendering below will re-interpolate
 
 		// if(windowId == -1) {
-		getViewerMethods().resizeWindow(visitWindowId, 500, 500);
+		//getViewerMethods().resizeWindow(visitWindowId, 500, 500);
 		// }
+
+		this.addListener (SWT.Resize,  new Listener () {
+			public void handleEvent (Event e) {
+				Rectangle rect = VisItSwtWidget.this.getClientArea();
+				getViewerMethods().resizeWindow(visitWindowId, rect.width, rect.height);
+			}
+		});
+	}
+
+	public VisItSwtConnection getVisItSwtConnection() {
+		return visitConnection;
+	}
+
+	public int getWindowId() {
+		return visitWindowId;
 	}
 
 	public boolean hasInitialized() {
@@ -268,7 +287,7 @@ public class VisItSwtWidget extends Canvas implements Listener,
 	 * @return
 	 */
 	public ViewerState getViewerState() {
-		return null; // client.getViewerState();
+		return visitConnection.getViewerState();
 	}
 
 	/**
@@ -318,41 +337,6 @@ public class VisItSwtWidget extends Canvas implements Listener,
 				|| visitConnection.hasInitialized() == false) {
 			return;
 		}
-
-		// if (mousePressed) {
-		// Point p = getSize();
-		// p.x = p.x;
-		// p.y = p.y;
-		//
-		// getViewerMethods().updateMouseActions(visitWindowId,
-		// "LeftPress",
-		// (double)start_x/(double)p.x,
-		// (double)start_y/p.y,
-		// (double)x/(double)p.x,
-		// (double)y/(double)p.y,
-		// ctrl, shift);
-		//
-		// getViewerMethods().updateMouseActions(visitWindowId,
-		// "Move",
-		// (double)start_x/(double)p.x,
-		// (double)start_y/p.y,
-		// (double)x/(double)p.x,
-		// (double)y/(double)p.y,
-		// ctrl, shift);
-		//
-		// getViewerMethods().updateMouseActions(visitWindowId,
-		// "LeftRelease",
-		// (double)start_x/(double)p.x,
-		// (double)start_y/p.y,
-		// (double)x/(double)p.x,
-		// (double)y/(double)p.y,
-		// ctrl, shift);
-		//
-		// getViewerMethods().forceRedraw(visitWindowId);
-		//
-		// start_x = p.x;
-		// start_y = p.y;
-		// }
 	}
 
 	/**
@@ -414,10 +398,12 @@ public class VisItSwtWidget extends Canvas implements Listener,
 		Display.getDefault().asyncExec(new Runnable() {
 			public void run() {
 				ByteArrayInputStream bis = new ByteArrayInputStream(output);
-				Image img = new Image(shell.getDisplay(), bis);
-				image = resize(shell.getDisplay(), img, getSize().x,
-						getSize().y);
-				img.dispose();
+				//Image img = new Image(shell.getDisplay(), bis);
+				//				image = resize(shell.getDisplay(), img, getSize().x,
+				//						getSize().y);
+				//				img.dispose();
+
+				image = new Image(shell.getDisplay(), bis);
 				redraw();
 			}
 		});
