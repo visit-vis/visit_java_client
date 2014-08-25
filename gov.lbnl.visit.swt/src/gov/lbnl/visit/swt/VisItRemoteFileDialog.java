@@ -1,11 +1,13 @@
 package gov.lbnl.visit.swt;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
@@ -25,166 +27,170 @@ import visit.java.client.ViewerMethods;
 
 public class VisItRemoteFileDialog implements AttributeSubjectCallback {
 
-	Display display;
-	ArrayList<String> files;
-	ArrayList<String> dirs;
-	ViewerMethods methods;
-	String remotePath = null;
+    Display display;
+    List<String> files;
+    List<String> dirs;
+    ViewerMethods methods;
+    String remotePath = null;
 
-	public VisItRemoteFileDialog(ViewerMethods _methods, Display _display) {
-		methods = _methods;
-		display = _display;
+    public VisItRemoteFileDialog(ViewerMethods vmethods, Display disp) {
+        methods = vmethods;
+        display = disp;
 
-		files = new ArrayList<String>();
-		dirs = new ArrayList<String>();
+        files = new ArrayList<String>();
+        dirs = new ArrayList<String>();
 
-		methods.getViewerState().registerCallback("QueryAttributes", this);
-	}
+        methods.getViewerState().registerCallback("QueryAttributes", this);
+    }
 
-	synchronized public void update(AttributeSubject arg0) {
-		String defaultName = arg0.get("defaultName").getAsString();
-		JsonArray defaultVars = arg0.get("defaultVars").getAsJsonArray();
+    public synchronized boolean update(AttributeSubject arg0) {
+        String defaultName = arg0.get("defaultName").getAsString();
+        JsonArray defaultVars = arg0.get("defaultVars").getAsJsonArray();
 
-		if (!defaultName.equals("FileList")) {
-			return;
-		}
-		dirs.clear();
-		files.clear();
+        if (!"FileList".equals(defaultName)) {
+            return false;
+        }
+        dirs.clear();
+        files.clear();
 
-		Gson gson = new Gson();
-		for (int i = 0; i < defaultVars.size(); ++i) {
-			String filelist = defaultVars.get(i).getAsString();
+        Gson gson = new Gson();
+        for (int i = 0; i < defaultVars.size(); ++i) {
+            String filelist = defaultVars.get(i).getAsString();
 
-			JsonObject obj;
-			filelist = filelist.replace("&quot;", "\"");
+            JsonObject obj;
+            filelist = filelist.replace("&quot;", "\"");
 
-			try {
-				obj = gson.fromJson(filelist, JsonObject.class);
-			} catch (JsonSyntaxException e) {
-				System.out.println("failed on " + filelist);
-				continue;
-			}
+            try {
+                obj = gson.fromJson(filelist, JsonObject.class);
+            } catch (JsonSyntaxException e) {
+                Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
+                continue;
+            }
 
-			JsonArray d = obj.get("dirs").getAsJsonArray();
-			JsonArray f = obj.get("files").getAsJsonArray();
+            JsonArray d = obj.get("dirs").getAsJsonArray();
+            JsonArray f = obj.get("files").getAsJsonArray();
 
-			for (int j = 0; j < d.size(); ++j) {
-				dirs.add(d.get(j).getAsString().replace("\"", ""));
-			}
+            for (int j = 0; j < d.size(); ++j) {
+                dirs.add(d.get(j).getAsString().replace("\"", ""));
+            }
 
-			for (int j = 0; j < f.size(); ++j) {
-				files.add(f.get(j).getAsString().replace("\"", ""));
-			}
-		}
-	}
+            for (int j = 0; j < f.size(); ++j) {
+                files.add(f.get(j).getAsString().replace("\"", ""));
+            }
+        }
+        
+        return true;
+    }
 
-	public void expandPath(Tree tree, TreeItem root) {
-		TreeItem[] items = root.getItems();
+    public void expandPath(Tree tree, TreeItem root) {
+        TreeItem[] items = root.getItems();
 
-		for (int i = 0; i < items.length; i++) {
-			if (items[i].getData() != null) {
-				return;
-			}
-			items[i].dispose();
-		}
+        for (int i = 0; i < items.length; i++) {
+            if (items[i].getData() != null) {
+                return;
+            }
+            items[i].dispose();
+        }
 
-		String file = (String) root.getData();
-		methods.getFileList("localhost", file);
+        String file = (String) root.getData();
+        methods.getFileList("localhost", file);
 
-		tree.removeAll();
+        tree.removeAll();
 
-		for (int i = 0; i < dirs.size(); i++) {
-			TreeItem item;
-			item = new TreeItem(tree, 0);
-			item.setText(dirs.get(i));
-			item.setData(dirs.get(i));
-			new TreeItem(item, 0);
-		}
+        for (int i = 0; i < dirs.size(); i++) {
+            TreeItem item;
+            item = new TreeItem(tree, 0);
+            item.setText(dirs.get(i));
+            item.setData(dirs.get(i));
+            new TreeItem(item, 0);
+        }
 
-		for (int i = 0; i < files.size(); i++) {
-			TreeItem item;
-			item = new TreeItem(tree, 0);
-			item.setText(files.get(i));
-			item.setData(files.get(i));
-		}
+        for (int i = 0; i < files.size(); i++) {
+            TreeItem item;
+            item = new TreeItem(tree, 0);
+            item.setText(files.get(i));
+            item.setData(files.get(i));
+        }
 
-		tree.redraw();
-	}
+        tree.redraw();
+    }
 
-	public String open() {
-		// final Display display = new Display ();
-		final Shell shell = new Shell(display, SWT.TITLE | SWT.CLOSE
-				| SWT.BORDER | SWT.YES | SWT.NO | SWT.PRIMARY_MODAL);
+    public String open() {
+        final Shell shell = new Shell(display, SWT.TITLE | SWT.CLOSE
+                | SWT.BORDER | SWT.PRIMARY_MODAL | SWT.RESIZE);
 
-		remotePath = null;
+        remotePath = null;
 
-		shell.setText("Remote File List");
-		shell.setLayout(new FillLayout());
+        shell.setText("Remote File List");
+        shell.setLayout(new FillLayout());
+        
+        final Tree tree = new Tree(shell, SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER);
+        
+        // / localhost in this case can also be remote machine..
+        methods.getFileList("localhost", ".");
 
-		final Tree tree = new Tree(shell, SWT.BORDER);
+        for (int i = 0; i < dirs.size(); i++) {
+            TreeItem root = new TreeItem(tree, 0);
+            root.setText(dirs.get(i));
+            root.setData(dirs.get(i));
+            new TreeItem(root, 0);
+        }
 
-		// / localhost in this case can also be remote machine..
-		methods.getFileList("localhost", ".");
+        for (int i = 0; i < files.size(); i++) {
+            TreeItem root = new TreeItem(tree, 0);
+            root.setText(files.get(i));
+            root.setData(files.get(i));
+        }
 
-		for (int i = 0; i < dirs.size(); i++) {
-			TreeItem root = new TreeItem(tree, 0);
-			root.setText(dirs.get(i));
-			root.setData(dirs.get(i));
-			new TreeItem(root, 0);
-		}
+        tree.addListener(SWT.Expand, new Listener() {
+            public void handleEvent(final Event event) {
+                final TreeItem root = (TreeItem) event.item;
+                expandPath(tree, root);
+            }
+        });
 
-		for (int i = 0; i < files.size(); i++) {
-			TreeItem root = new TreeItem(tree, 0);
-			root.setText(files.get(i));
-			root.setData(files.get(i));
-			// new TreeItem (root, 0);
-		}
+        tree.addSelectionListener(new TreeSelection(tree, shell));
 
-		tree.addListener(SWT.Expand, new Listener() {
-			public void handleEvent(final Event event) {
-				final TreeItem root = (TreeItem) event.item;
-				expandPath(tree, root);
-			}
-		});
+        shell.setSize(400, 400);
+        shell.open();
 
-		tree.addSelectionListener(new SelectionListener() {
+        while (!shell.isDisposed()) {
+            if (!display.readAndDispatch()) {
+                display.sleep();
+            }
+        }
 
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-			}
+        return remotePath;
+    }
+    
+    class TreeSelection implements SelectionListener {
+        Tree tree;
+        Shell shell;
+        TreeSelection(Tree ptree, Shell s) {
+            tree = ptree;
+            shell = s;
+        }
+        
+        @Override
+        public void widgetSelected(SelectionEvent e) {
+            /// do nothing on typical widget selection
+        }
 
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				TreeItem[] items = tree.getSelection();
+        @Override
+        public void widgetDefaultSelected(SelectionEvent e) {
+            TreeItem[] items = tree.getSelection();
 
-				if (items.length != 1)
-					return;
+            if (items.length != 1) {
+                return;
+            }
+            
+            if (items[0].getItemCount() > 0) {
+                expandPath(tree, items[0]);
+                return;
+            }
 
-				if (items[0].getItemCount() > 0) {
-					expandPath(tree, items[0]);
-					return;
-				}
-
-				remotePath = items[0].getText();
-				System.out.println("path = " + remotePath);
-				shell.dispose();
-			}
-		});
-
-		Point size = tree.computeSize(300, SWT.DEFAULT);
-		int width = Math.max(300, size.x);
-		int height = Math.max(300, size.y);
-		shell.setSize(shell.computeSize(width, height));
-		shell.open();
-
-		while (!shell.isDisposed()) {
-			if (!display.readAndDispatch()) {
-				display.sleep();
-			}
-
-		}
-		// display.dispose ();
-
-		return remotePath;
-	}
+            remotePath = items[0].getText();
+            shell.dispose();
+        }
+    }
 }
