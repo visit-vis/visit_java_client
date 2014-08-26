@@ -5,12 +5,16 @@ import java.util.ArrayList;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
@@ -112,18 +116,32 @@ public class VisItRemoteFileDialog implements AttributeSubjectCallback {
 	}
 
 	public String open() {
-		// final Display display = new Display ();
-		final Shell shell = new Shell(display, SWT.TITLE | SWT.CLOSE
-				| SWT.BORDER | SWT.YES | SWT.NO | SWT.PRIMARY_MODAL);
+		final Shell shell = new Shell(display, SWT.CLOSE);
 
 		remotePath = null;
 
-		shell.setText("Remote File List");
+		shell.setText("Remote System Files and Directories");
 		shell.setLayout(new FillLayout());
 
-		final Tree tree = new Tree(shell, SWT.BORDER);
+		Composite comp = new Composite(shell, SWT.NONE);
+		comp.setLayout(new GridLayout(1, false));
 
-		// / localhost in this case can also be remote machine..
+		// TODO Waiting for a method to get the path or a remote file system
+		// browser that doesn't require a VisIt connection
+		// Composite locationComp = new Composite(comp, SWT.NONE);
+		// locationComp
+		// .setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		// locationComp.setLayout(new GridLayout(2, false));
+		// Label locationLabel = new Label(locationComp, SWT.NONE);
+		// locationLabel.setText("Location:");
+		// final Text locationText = new Text(locationComp, SWT.BORDER);
+		// locationText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
+		// true));
+
+		final Tree tree = new Tree(comp, SWT.BORDER);
+		tree.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+
+		// localhost in this case can also be remote machine..
 		methods.getFileList("localhost", ".");
 
 		for (int i = 0; i < dirs.size(); i++) {
@@ -171,10 +189,7 @@ public class VisItRemoteFileDialog implements AttributeSubjectCallback {
 			}
 		});
 
-		Point size = tree.computeSize(300, SWT.DEFAULT);
-		int width = Math.max(300, size.x);
-		int height = Math.max(300, size.y);
-		shell.setSize(shell.computeSize(width, height));
+		shell.setSize(shell.computeSize(500, 700));
 		shell.open();
 
 		while (!shell.isDisposed()) {
@@ -183,7 +198,6 @@ public class VisItRemoteFileDialog implements AttributeSubjectCallback {
 			}
 
 		}
-		// display.dispose ();
 
 		return remotePath;
 	}
