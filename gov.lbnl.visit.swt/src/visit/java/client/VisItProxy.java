@@ -177,7 +177,6 @@ public class VisItProxy {
 			visitRPC = new HashMap<String, Integer>();
 			for (int i = 0; i < visit_rpc.size(); ++i) {
 				visitRPC.put(visit_rpc.get(i).getAsString(), i);
-				System.out.println(visit_rpc.get(i).getAsString() + "," + i);
 			}
 
 			if (m_useTunnel) {
