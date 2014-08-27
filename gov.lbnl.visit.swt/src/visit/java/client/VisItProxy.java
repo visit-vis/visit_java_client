@@ -52,7 +52,7 @@ public class VisItProxy {
 	 * 
 	 */
 	private HashMap<String, Integer> visitRPC;
-	
+
 	/**
 	 * 
 	 */
@@ -151,19 +151,19 @@ public class VisItProxy {
 
 			// System.out.println("Reading...");
 			String message = "";
-			
+
 			int len = 0;
 			do {
 				char[] cbuf = new char[1024];
 				len = reader.read(cbuf);
-				
-				if(len <= 0)
+
+				if (len <= 0)
 					break;
-				
+
 				String msg = new String(cbuf, 0, len);
 				message += msg;
-				
-			} while(len > 0);
+
+			} while (len > 0);
 
 			// System.out.println("raw message: " + message);
 			JsonElement e = gson.fromJson(message, JsonElement.class);
@@ -173,12 +173,13 @@ public class VisItProxy {
 			visit_port = jo.get("port").getAsString();
 			visit_security_key = jo.get("securityKey").getAsString();
 			JsonArray visit_rpc = jo.get("rpc_array").getAsJsonArray();
-			
+
 			visitRPC = new HashMap<String, Integer>();
-			for(int i = 0; i < visit_rpc.size(); ++i) {
+			for (int i = 0; i < visit_rpc.size(); ++i) {
 				visitRPC.put(visit_rpc.get(i).getAsString(), i);
+				System.out.println(visit_rpc.get(i).getAsString() + "," + i);
 			}
-			
+
 			if (m_useTunnel) {
 				m_tunnelSession.setPortForwardingL(
 						Integer.parseInt(visit_port), "localhost",
@@ -268,7 +269,7 @@ public class VisItProxy {
 			if (callback != null) {
 				callback.initialized();
 			}
-			
+
 			methods = new ViewerMethods(state, visitRPC);
 
 			System.out.println("Viewer State synched..");
