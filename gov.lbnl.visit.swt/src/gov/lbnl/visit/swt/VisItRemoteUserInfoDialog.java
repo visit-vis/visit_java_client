@@ -26,12 +26,20 @@ import com.jcraft.jsch.UserInfo;
  */
 public class VisItRemoteUserInfoDialog implements UserInfo,
 		UIKeyboardInteractive {
-	Shell s;
 
-	public VisItRemoteUserInfoDialog(Shell shell) {
-		s = shell;
-	}
+    /** parent shell */
+    Shell s;
+    
+    /** the pass-phrase typed in by the user */
+    private String passphrase;
 
+    /** the password typed in by the user. */
+    private String passwd;
+    
+    public VisItRemoteUserInfoDialog(Shell shell) {
+        s = shell;
+    }
+    
 	public boolean promptYesNo(String str) {
 		MessageBox messageBox = new MessageBox(s, SWT.ICON_WARNING | SWT.YES
 				| SWT.NO);
@@ -41,9 +49,6 @@ public class VisItRemoteUserInfoDialog implements UserInfo,
 		int response = messageBox.open();
 		return response == SWT.YES;
 	}
-
-	/** the pass-phrase typed in by the user */
-	private String passphrase;
 
 	/*
 	 * returns the pass-phrase typed in by the user.
@@ -59,9 +64,6 @@ public class VisItRemoteUserInfoDialog implements UserInfo,
 		this.passphrase = promptPassImpl(message);
 		return passphrase != null;
 	}
-
-	/** the password typed in by the user. */
-	private String passwd;
 
 	/**
 	 * returns the password typed in by the user.

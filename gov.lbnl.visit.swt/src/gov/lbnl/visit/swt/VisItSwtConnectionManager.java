@@ -1,13 +1,16 @@
 package gov.lbnl.visit.swt;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
 public class VisItSwtConnectionManager {
 
-	private HashMap<String, VisItSwtConnection> conns;
+	private Map<String, VisItSwtConnection> conns;
 
 	/**
 	 * ! static manager instance..
@@ -26,7 +29,7 @@ public class VisItSwtConnectionManager {
 		return manager;
 	}
 
-	public static HashMap<String, VisItSwtConnection> getConnMap() {
+	public static Map<String, VisItSwtConnection> getConnMap() {
 		return manager.conns;
 	}
 
@@ -44,7 +47,7 @@ public class VisItSwtConnectionManager {
 	}
 
 	public static VisItSwtConnection createConnection(String key,
-			Display display, HashMap<String, String> inputMap) {
+			Display display, Map<String, String> inputMap) {
 
 		try {
 			VisItSwtConnection vizConnection = new VisItSwtConnection(
@@ -86,10 +89,8 @@ public class VisItSwtConnectionManager {
 				return vizConnection;
 			}
 		} catch (Exception e) {
-			System.err.println("VisItSwtConnectionManager Message: "
-					+ "Error during VisItSwtConnection construction: "
-					+ e.getMessage());
-			e.printStackTrace();
+			// / error during visit construction..
+			Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
 		}
 		return null;
 	}
