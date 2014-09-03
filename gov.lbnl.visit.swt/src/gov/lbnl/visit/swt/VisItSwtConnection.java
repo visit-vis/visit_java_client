@@ -413,7 +413,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
             throw new IOException("Initial read from VisIt process failed...");
         }
 
-        while (line.trim().startsWith("Starting to listen on port")) {
+        while (!line.trim().startsWith("Starting to listen on port")) {
             line = input.readLine();
 
             if (line == null) {
