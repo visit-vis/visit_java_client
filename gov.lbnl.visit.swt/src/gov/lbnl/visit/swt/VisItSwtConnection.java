@@ -169,9 +169,13 @@ public class VisItSwtConnection implements VisItInitializedCallback,
     public void registerCallback(String id, AttributeSubjectCallback callback) {
         client.getViewerState().registerCallback(id, callback);
     }
+    
+    public void unregisterCallback(String id, AttributeSubjectCallback callback) {
+        client.getViewerState().unregisterCallback(id, callback);
+    }
 
     /** ! window callback */
-    public void registerVisualization(VISIT_CONNECTION_TYPE type, int windowId,
+    public boolean registerVisualization(VISIT_CONNECTION_TYPE type, int windowId,
             VisualizationUpdateCallback callback) {
 
         if (!windowCallbacks.containsKey(windowId)) {
@@ -179,11 +183,39 @@ public class VisItSwtConnection implements VisItInitializedCallback,
                     new ArrayList<VisItConnectionStruct>());
         }
 
+        List<VisItConnectionStruct> list = windowCallbacks.get(windowId);
+
+        /// if a connection already exists return false.
+        for(int i = 0; i < list.size(); ++i) {
+            if(list.get(i) == callback) {
+                return false;
+            }
+        }
+        
         VisItConnectionStruct struct = new VisItConnectionStruct();
         struct.callback = callback;
         struct.setConnType(type);
-
-        windowCallbacks.get(windowId).add(struct);
+        list.add(struct);
+        return true;
+    }
+    
+    public boolean unregisterVisualization(int windowId, VisualizationUpdateCallback callback) {
+        
+        if (!windowCallbacks.containsKey(windowId)) {
+            return true;
+        }
+        
+        List<VisItConnectionStruct> list = windowCallbacks.get(windowId);
+        
+        for(int i = 0; i < list.size(); ++i) {
+            VisItConnectionStruct struct = list.get(i);
+            if(struct.callback == callback) {
+                list.remove(i);
+                return true;
+            }
+        }
+        
+        return false;
     }
 
     /**
@@ -271,8 +303,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         command.add(password);
         command.add("-cli");
         command.add("-nowin");
-        command.add("-clscript");
-        command.add("'while True: import time; time.sleep(0.1)'");
+        command.add("-hidden");
         return command;
     }
 
@@ -293,11 +324,16 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         String executable = dir + "/visit";
 
         if (!new File(executable).exists()) {
+            /// try mac install..
             executable = dir + "/VisIt.app/Contents/Resources/bin/visit";
             if (!new File(executable).exists()) {
-                // return false as VisIt executable does not exist
-                Logger.getGlobal().severe("VisIt executable was not found");
-                return false;
+                executable = dir + "/visit.exe";
+                /// try windows.
+                if (!new File(executable).exists()) {               
+                    // return false as VisIt executable does not exist
+                    Logger.getGlobal().severe("VisIt executable was not found");
+                    return false;
+                }
             }
         }
 

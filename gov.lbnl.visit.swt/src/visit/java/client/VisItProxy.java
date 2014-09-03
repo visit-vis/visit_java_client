@@ -497,7 +497,7 @@ public class VisItProxy {
 
                     len = inputConnection.read(data);
 
-                    if (qThread || len == 0 || data == null) {
+                    if (qThread || len <= 0 || data == null) {
                         throw new StreamCorruptedException("Quitting Thread Due to Processing Failure");
                     }
 
@@ -511,5 +511,4 @@ public class VisItProxy {
             }
         }
     }
-
 }

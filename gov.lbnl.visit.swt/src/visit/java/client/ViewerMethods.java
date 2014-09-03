@@ -238,6 +238,13 @@ public class ViewerMethods {
         synchronize();
     }
 
+    public synchronized void activateDatabase(String filename) {
+        mState.set(0, RPCTYPE, visitRPC.get("ActivateDatabaseRPC"));
+        mState.set(0, "database", filename);
+        mState.notify(0);
+        synchronize();
+    }
+
     /**
      * @param filename
      */
