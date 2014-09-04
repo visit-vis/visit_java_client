@@ -13,6 +13,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.FocusListener;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -41,6 +45,7 @@ import visit.java.client.ViewerState;
 public class VisItSwtWidget extends Canvas implements Listener,
         AttributeSubjectCallback, VisualizationUpdateCallback {
 
+    private static final String AVTDATABASEMETADATA = "avtDatabaseMetaData";
     /**
      * The database metadata.
      */
@@ -114,6 +119,19 @@ public class VisItSwtWidget extends Canvas implements Listener,
 
         // Register this as an SWT.Paint listener
         addListener(SWT.Paint, this);
+
+        addFocusListener(new FocusListener() {
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                // nothing to do when focus is lost..
+            }
+
+            @Override
+            public void focusGained(FocusEvent e) {
+                activate();
+            }
+        });
     }
 
     public void activate() {
@@ -164,7 +182,7 @@ public class VisItSwtWidget extends Canvas implements Listener,
 
         visitConnection.registerVisualization(VISIT_CONNECTION_TYPE.IMAGE,
                 visitWindowId, this);
-        visitConnection.registerCallback("avtDatabaseMetaData", this);
+        visitConnection.registerCallback(AVTDATABASEMETADATA, this);
         initialized = true;
 
         getViewerMethods().resizeWindow(visitWindowId, windowWidth,
@@ -175,6 +193,20 @@ public class VisItSwtWidget extends Canvas implements Listener,
                 Rectangle rect = VisItSwtWidget.this.getClientArea();
                 getViewerMethods().resizeWindow(visitWindowId, rect.width,
                         rect.height);
+            }
+        });
+        
+        addDisposeListener(new DisposeListener() {
+            
+            @Override
+            public void widgetDisposed(DisposeEvent e) {
+                visitConnection.unregisterVisualization(visitWindowId, 
+                                                        VisItSwtWidget.this);  
+                
+                visitConnection.unregisterCallback(AVTDATABASEMETADATA, 
+                                                    VisItSwtWidget.this);
+                        
+                
             }
         });
     }
@@ -255,7 +287,7 @@ public class VisItSwtWidget extends Canvas implements Listener,
     public synchronized boolean update(AttributeSubject arg0) {
         String typename = arg0.getTypename();
 
-        if ("avtDatabaseMetaData".equals(typename)) {
+        if (AVTDATABASEMETADATA.equals(typename)) {
             updateDatabaseMetaData(arg0);
             return true;
         }
