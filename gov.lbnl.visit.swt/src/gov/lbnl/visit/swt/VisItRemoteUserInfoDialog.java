@@ -1,6 +1,3 @@
-/**
- * 
- */
 package gov.lbnl.visit.swt;
 
 import org.eclipse.swt.SWT;
@@ -9,6 +6,7 @@ import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
@@ -21,29 +19,30 @@ import com.jcraft.jsch.UserInfo;
 
 /**
  * @author hari
- *
+ * 
  */
-public class VisItRemoteUserInfoDialog implements UserInfo, UIKeyboardInteractive {
-    
+public class VisItRemoteUserInfoDialog implements UserInfo,
+        UIKeyboardInteractive {
+
     /** parent shell */
     Shell s;
-    
+
     /** the pass-phrase typed in by the user */
     private String passphrase;
 
     /** the password typed in by the user. */
     private String passwd;
-    
+
     public VisItRemoteUserInfoDialog(Shell shell) {
         s = shell;
     }
-    
+
     public boolean promptYesNo(String str) {
-        MessageBox messageBox = new MessageBox(s, SWT.ICON_WARNING
-                | SWT.YES | SWT.NO);
+        MessageBox messageBox = new MessageBox(s, SWT.ICON_WARNING | SWT.YES
+                | SWT.NO);
         messageBox.setMessage(str);
         messageBox.setText("Warning");
-        
+
         int response = messageBox.open();
         return response == SWT.YES;
     }
@@ -71,27 +70,27 @@ public class VisItRemoteUserInfoDialog implements UserInfo, UIKeyboardInteractiv
     }
 
     public static class PasswordDialog extends Dialog {
-          private String password;
-          int result = SWT.CANCEL;
-          
-          public PasswordDialog(Shell parent) {
+        private String password;
+        int result = SWT.CANCEL;
+
+        public PasswordDialog(Shell parent) {
             // Pass the default styles here
             this(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
             password = "";
-          }
+        }
 
-          public PasswordDialog(Shell parent, int style) {
+        public PasswordDialog(Shell parent, int style) {
             // Let users override the default styles
             super(parent, style);
-            setText("Enter Password...");
+            setText("Enter Password for the Remote Machine");
             password = "";
-          }
+        }
 
-          public String getPassword() {
-              return password;
-          }
-          
-          public int open() {
+        public String getPassword() {
+            return password;
+        }
+
+        public int open() {
             // Create the dialog window
             Shell shell = new Shell(getParent(), getStyle());
             shell.setText(getText());
@@ -100,57 +99,60 @@ public class VisItRemoteUserInfoDialog implements UserInfo, UIKeyboardInteractiv
             shell.open();
             Display display = getParent().getDisplay();
             while (!shell.isDisposed()) {
-              if (!display.readAndDispatch()) {
-                display.sleep();
-              }
+                if (!display.readAndDispatch()) {
+                    display.sleep();
+                }
             }
             // Return the entered value, or null
             return result;
-          }
+        }
 
-          private void createContents(final Shell shell) {
-            shell.setLayout(new GridLayout(3, false));
+        private void createContents(final Shell shell) {
+            shell.setLayout(new GridLayout(2, false));
 
             // Show the message
-            Label label = new Label(shell, SWT.BOLD | SWT.NONE);
+            Label label = new Label(shell, SWT.NONE);
             label.setText("Password: ");
-            
-            GridData data = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-            data.horizontalSpan = 3;
-            label.setLayoutData(data);
-            
-            final Text passwordField = new Text(shell, SWT.PASSWORD | SWT.NONE);
-            passwordField.setText("");    
-            passwordField.setLayoutData(data);
-            
-            Button okButton = new Button(shell, SWT.BORDER);
-            okButton.setText("OK");
-            data = new GridData(GridData.FILL_HORIZONTAL);
-            okButton.setLayoutData(data);
-            okButton.addSelectionListener(new SelectionAdapter() {
-              public void widgetSelected(SelectionEvent event) {
-                  password = passwordField.getText(); 
-                  result = SWT.OK;
-                  shell.close();
-              }
-            });
-            
-            Button cancel = new Button(shell, SWT.PUSH);
+            label.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false,
+                    false));
+
+            final Text passwordField = new Text(shell, SWT.PASSWORD
+                    | SWT.BORDER);
+            passwordField.setText("");
+            passwordField.setLayoutData(new GridData(300, SWT.DEFAULT));
+
+            Composite buttonComp = new Composite(shell, SWT.NONE);
+            buttonComp.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true,
+                    true, 2, 1));
+            buttonComp.setLayout(new GridLayout(2, true));
+
+            Button cancel = new Button(buttonComp, SWT.PUSH);
             cancel.setText("Cancel");
-            data = new GridData(GridData.FILL_HORIZONTAL);
-            cancel.setLayoutData(data);
+            cancel.setLayoutData(new GridData(100, SWT.DEFAULT));
             cancel.addSelectionListener(new SelectionAdapter() {
-              public void widgetSelected(SelectionEvent event) {
-                password = "";
-                passwordField.setText("");
-                result = SWT.CANCEL;
-                shell.close();
-              }
+                public void widgetSelected(SelectionEvent event) {
+                    password = "";
+                    passwordField.setText("");
+                    result = SWT.CANCEL;
+                    shell.close();
+                }
+            });
+
+            Button okButton = new Button(buttonComp, SWT.BORDER);
+            okButton.setText("OK");
+            okButton.setLayoutData(new GridData(100, SWT.DEFAULT));
+            okButton.addSelectionListener(new SelectionAdapter() {
+                public void widgetSelected(SelectionEvent event) {
+                    password = passwordField.getText();
+                    result = SWT.OK;
+                    shell.close();
+                }
             });
 
             shell.setDefaultButton(okButton);
-          }
         }
+    }
+
     /*
      * asks a server password from the user.
      */
@@ -163,16 +165,15 @@ public class VisItRemoteUserInfoDialog implements UserInfo, UIKeyboardInteractiv
      * the common implementation of both {@link #promptPassword} and
      * {@link #promptPassphrase}.
      * 
-     * @return the string typed in, if the user confirmed, else {@code null}
-     *         .
+     * @return the string typed in, if the user confirmed, else {@code null} .
      */
     private String promptPassImpl(String message) {
-        
+
         PasswordDialog dialog = new PasswordDialog(s);
-        
+
         int result = dialog.open();
-        
-        if(result == SWT.OK) {
+
+        if (result == SWT.OK) {
             return dialog.getPassword();
         }
         return null;
@@ -191,15 +192,15 @@ public class VisItRemoteUserInfoDialog implements UserInfo, UIKeyboardInteractiv
     /*
      * prompts the user a series of questions.
      */
-    public String[] promptKeyboardInteractive(String destination,
-            String name, String instruction, String[] prompt, boolean[] echo) {
-        
+    public String[] promptKeyboardInteractive(String destination, String name,
+            String instruction, String[] prompt, boolean[] echo) {
+
         boolean result = promptPassword("Enter password");
-        
-        if(result) {
+
+        if (result) {
             return new String[] { getPassword() };
         }
-        
-        return new String [] {};
+
+        return new String[] {};
     }
 }
