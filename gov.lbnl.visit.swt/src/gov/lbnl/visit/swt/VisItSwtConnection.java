@@ -671,6 +671,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
                 String line = input.readLine();
 
                 // Wait until it starts to listen on port...
+                Logger.getGlobal().info("Initialization: " + line);
+                
                 if (line == null) {
                     throw new IOException(
                             "Failed initial read from VisIt process...");
