@@ -9,15 +9,10 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.FillLayout;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 
@@ -120,89 +115,82 @@ public class VisItRemoteFileDialog implements AttributeSubjectCallback {
         tree.redraw();
     }
 
-	public String open() {
-		final Shell shell = new Shell(display, SWT.CLOSE);
+    public String open() {
+        final Shell shell = new Shell(display, SWT.TITLE | SWT.CLOSE
+                | SWT.BORDER | SWT.PRIMARY_MODAL | SWT.RESIZE);
 
-		remotePath = null;
+        remotePath = null;
 
-		shell.setText("Remote System Files and Directories");
-		shell.setLayout(new FillLayout());
+        shell.setText("Remote File List");
+        shell.setLayout(new FillLayout());
+        
+        final Tree tree = new Tree(shell, SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER);
+        
+        // / localhost in this case can also be remote machine..
+        methods.getFileList("localhost", ".");
 
-		Composite comp = new Composite(shell, SWT.NONE);
-		comp.setLayout(new GridLayout(1, false));
+        for (int i = 0; i < dirs.size(); i++) {
+            TreeItem root = new TreeItem(tree, 0);
+            root.setText(dirs.get(i));
+            root.setData(dirs.get(i));
+            new TreeItem(root, 0);
+        }
 
-		// TODO Waiting for a method to get the path or a remote file system
-		// browser that doesn't require a VisIt connection
-		// Composite locationComp = new Composite(comp, SWT.NONE);
-		// locationComp
-		// .setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		// locationComp.setLayout(new GridLayout(2, false));
-		// Label locationLabel = new Label(locationComp, SWT.NONE);
-		// locationLabel.setText("Location:");
-		// final Text locationText = new Text(locationComp, SWT.BORDER);
-		// locationText.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
-		// true));
+        for (int i = 0; i < files.size(); i++) {
+            TreeItem root = new TreeItem(tree, 0);
+            root.setText(files.get(i));
+            root.setData(files.get(i));
+        }
 
-		final Tree tree = new Tree(comp, SWT.BORDER);
-		tree.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        tree.addListener(SWT.Expand, new Listener() {
+            public void handleEvent(final Event event) {
+                final TreeItem root = (TreeItem) event.item;
+                expandPath(tree, root);
+            }
+        });
 
-		// localhost in this case can also be remote machine..
-		methods.getFileList("localhost", ".");
+        tree.addSelectionListener(new TreeSelection(tree, shell));
 
-		for (int i = 0; i < dirs.size(); i++) {
-			TreeItem root = new TreeItem(tree, 0);
-			root.setText(dirs.get(i));
-			root.setData(dirs.get(i));
-			new TreeItem(root, 0);
-		}
+        shell.setSize(400, 400);
+        shell.open();
 
-		for (int i = 0; i < files.size(); i++) {
-			TreeItem root = new TreeItem(tree, 0);
-			root.setText(files.get(i));
-			root.setData(files.get(i));
-		}
+        while (!shell.isDisposed()) {
+            if (!display.readAndDispatch()) {
+                display.sleep();
+            }
+        }
 
-		tree.addListener(SWT.Expand, new Listener() {
-			public void handleEvent(final Event event) {
-				final TreeItem root = (TreeItem) event.item;
-				expandPath(tree, root);
-			}
-		});
+        return remotePath;
+    }
+    
+    class TreeSelection implements SelectionListener {
+        Tree tree;
+        Shell shell;
+        TreeSelection(Tree ptree, Shell s) {
+            tree = ptree;
+            shell = s;
+        }
+        
+        @Override
+        public void widgetSelected(SelectionEvent e) {
+            /// do nothing on typical widget selection
+        }
 
-		tree.addSelectionListener(new SelectionListener() {
+        @Override
+        public void widgetDefaultSelected(SelectionEvent e) {
+            TreeItem[] items = tree.getSelection();
 
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-			}
+            if (items.length != 1) {
+                return;
+            }
+            
+            if (items[0].getItemCount() > 0) {
+                expandPath(tree, items[0]);
+                return;
+            }
 
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				TreeItem[] items = tree.getSelection();
-
-				if (items.length != 1)
-					return;
-
-				if (items[0].getItemCount() > 0) {
-					expandPath(tree, items[0]);
-					return;
-				}
-
-				remotePath = items[0].getText();
-				System.out.println("path = " + remotePath);
-				shell.dispose();
-			}
-		});
-
-		shell.setSize(shell.computeSize(500, 700));
-		shell.open();
-
-		while (!shell.isDisposed()) {
-			if (!display.readAndDispatch()) {
-				display.sleep();
-			}
-
-		}
-
-		return remotePath;
-	}
+            remotePath = items[0].getText();
+            shell.dispose();
+        }
+    }
 }

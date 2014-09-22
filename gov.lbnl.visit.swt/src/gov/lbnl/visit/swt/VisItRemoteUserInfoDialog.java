@@ -1,6 +1,3 @@
-/**
- * 
- */
 package gov.lbnl.visit.swt;
 
 import org.eclipse.swt.SWT;
@@ -25,185 +22,185 @@ import com.jcraft.jsch.UserInfo;
  * 
  */
 public class VisItRemoteUserInfoDialog implements UserInfo,
-		UIKeyboardInteractive {
+        UIKeyboardInteractive {
 
     /** parent shell */
     Shell s;
-    
+
     /** the pass-phrase typed in by the user */
     private String passphrase;
 
     /** the password typed in by the user. */
     private String passwd;
-    
+
     public VisItRemoteUserInfoDialog(Shell shell) {
         s = shell;
     }
-    
-	public boolean promptYesNo(String str) {
-		MessageBox messageBox = new MessageBox(s, SWT.ICON_WARNING | SWT.YES
-				| SWT.NO);
-		messageBox.setMessage(str);
-		messageBox.setText("Warning");
 
-		int response = messageBox.open();
-		return response == SWT.YES;
-	}
+    public boolean promptYesNo(String str) {
+        MessageBox messageBox = new MessageBox(s, SWT.ICON_WARNING | SWT.YES
+                | SWT.NO);
+        messageBox.setMessage(str);
+        messageBox.setText("Warning");
 
-	/*
-	 * returns the pass-phrase typed in by the user.
-	 */
-	public String getPassphrase() {
-		return passphrase;
-	}
+        int response = messageBox.open();
+        return response == SWT.YES;
+    }
 
-	/*
-	 * asks a key passphrase from the user.
-	 */
-	public boolean promptPassphrase(String message) {
-		this.passphrase = promptPassImpl(message);
-		return passphrase != null;
-	}
+    /*
+     * returns the pass-phrase typed in by the user.
+     */
+    public String getPassphrase() {
+        return passphrase;
+    }
 
-	/**
-	 * returns the password typed in by the user.
-	 */
-	public String getPassword() {
-		return passwd;
-	}
+    /*
+     * asks a key passphrase from the user.
+     */
+    public boolean promptPassphrase(String message) {
+        this.passphrase = promptPassImpl(message);
+        return passphrase != null;
+    }
 
-	public static class PasswordDialog extends Dialog {
-		public String password;
-		int result = SWT.CANCEL;
+    /**
+     * returns the password typed in by the user.
+     */
+    public String getPassword() {
+        return passwd;
+    }
 
-		public PasswordDialog(Shell parent) {
-			// Pass the default styles here
-			this(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
-			password = "";
-		}
+    public static class PasswordDialog extends Dialog {
+        private String password;
+        int result = SWT.CANCEL;
 
-		public PasswordDialog(Shell parent, int style) {
-			// Let users override the default styles
-			super(parent, style);
-			setText("Enter Password for the Remote Machine");
-			password = "";
-		}
+        public PasswordDialog(Shell parent) {
+            // Pass the default styles here
+            this(parent, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
+            password = "";
+        }
 
-		public String getPassword() {
-			return password;
-		}
+        public PasswordDialog(Shell parent, int style) {
+            // Let users override the default styles
+            super(parent, style);
+            setText("Enter Password for the Remote Machine");
+            password = "";
+        }
 
-		public int open() {
-			// Create the dialog window
-			Shell shell = new Shell(getParent(), getStyle());
-			shell.setText(getText());
-			createContents(shell);
-			shell.pack();
-			shell.open();
-			Display display = getParent().getDisplay();
-			while (!shell.isDisposed()) {
-				if (!display.readAndDispatch()) {
-					display.sleep();
-				}
-			}
-			// Return the entered value, or null
-			return result;
-		}
+        public String getPassword() {
+            return password;
+        }
 
-		private void createContents(final Shell shell) {
-			shell.setLayout(new GridLayout(2, false));
+        public int open() {
+            // Create the dialog window
+            Shell shell = new Shell(getParent(), getStyle());
+            shell.setText(getText());
+            createContents(shell);
+            shell.pack();
+            shell.open();
+            Display display = getParent().getDisplay();
+            while (!shell.isDisposed()) {
+                if (!display.readAndDispatch()) {
+                    display.sleep();
+                }
+            }
+            // Return the entered value, or null
+            return result;
+        }
 
-			// Show the message
-			Label label = new Label(shell, SWT.RIGHT);
-			label.setText("Password: ");
+        private void createContents(final Shell shell) {
+            shell.setLayout(new GridLayout(2, false));
 
-			final Text passwordField = new Text(shell, SWT.BORDER
-					| SWT.PASSWORD);
-			passwordField.setText("");
-			passwordField.setLayoutData(new GridData(400, SWT.DEFAULT));
+            // Show the message
+            Label label = new Label(shell, SWT.NONE);
+            label.setText("Password: ");
+            label.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, false,
+                    false));
 
-			Composite buttonComp = new Composite(shell, SWT.NONE);
-			buttonComp.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true,
-					true, 2, 1));
-			buttonComp.setLayout(new GridLayout(2, true));
+            final Text passwordField = new Text(shell, SWT.PASSWORD
+                    | SWT.BORDER);
+            passwordField.setText("");
+            passwordField.setLayoutData(new GridData(300, SWT.DEFAULT));
 
-			Button cancel = new Button(buttonComp, SWT.PUSH);
-			cancel.setText("Cancel");
-			cancel.setSize(150, SWT.DEFAULT);
-			cancel.setLayoutData(new GridData(100, SWT.DEFAULT));
-			cancel.addSelectionListener(new SelectionAdapter() {
-				public void widgetSelected(SelectionEvent event) {
-					password = "";
-					passwordField.setText("");
-					result = SWT.CANCEL;
-					shell.close();
-				}
-			});
+            Composite buttonComp = new Composite(shell, SWT.NONE);
+            buttonComp.setLayoutData(new GridData(SWT.RIGHT, SWT.CENTER, true,
+                    true, 2, 1));
+            buttonComp.setLayout(new GridLayout(2, true));
 
-			Button okButton = new Button(buttonComp, SWT.BORDER);
-			okButton.setText("OK");
-			okButton.setSize(150, SWT.DEFAULT);
-			okButton.setLayoutData(new GridData(100, SWT.DEFAULT));
-			okButton.addSelectionListener(new SelectionAdapter() {
-				public void widgetSelected(SelectionEvent event) {
-					password = passwordField.getText();
-					result = SWT.OK;
-					shell.close();
-				}
-			});
+            Button cancel = new Button(buttonComp, SWT.PUSH);
+            cancel.setText("Cancel");
+            cancel.setLayoutData(new GridData(100, SWT.DEFAULT));
+            cancel.addSelectionListener(new SelectionAdapter() {
+                public void widgetSelected(SelectionEvent event) {
+                    password = "";
+                    passwordField.setText("");
+                    result = SWT.CANCEL;
+                    shell.close();
+                }
+            });
 
-			shell.setDefaultButton(okButton);
-		}
-	}
+            Button okButton = new Button(buttonComp, SWT.BORDER);
+            okButton.setText("OK");
+            okButton.setLayoutData(new GridData(100, SWT.DEFAULT));
+            okButton.addSelectionListener(new SelectionAdapter() {
+                public void widgetSelected(SelectionEvent event) {
+                    password = passwordField.getText();
+                    result = SWT.OK;
+                    shell.close();
+                }
+            });
 
-	/*
-	 * asks a server password from the user.
-	 */
-	public boolean promptPassword(String message) {
-		this.passwd = promptPassImpl(message);
-		return passwd != null;
-	}
+            shell.setDefaultButton(okButton);
+        }
+    }
 
-	/**
-	 * the common implementation of both {@link #promptPassword} and
-	 * {@link #promptPassphrase}.
-	 * 
-	 * @return the string typed in, if the user confirmed, else {@code null} .
-	 */
-	private String promptPassImpl(String message) {
+    /*
+     * asks a server password from the user.
+     */
+    public boolean promptPassword(String message) {
+        this.passwd = promptPassImpl(message);
+        return passwd != null;
+    }
 
-		PasswordDialog dialog = new PasswordDialog(s);
+    /**
+     * the common implementation of both {@link #promptPassword} and
+     * {@link #promptPassphrase}.
+     * 
+     * @return the string typed in, if the user confirmed, else {@code null} .
+     */
+    private String promptPassImpl(String message) {
 
-		int result = dialog.open();
+        PasswordDialog dialog = new PasswordDialog(s);
 
-		if (result == SWT.OK) {
-			return dialog.getPassword();
-		}
-		return null;
-	}
+        int result = dialog.open();
 
-	/*
-	 * shows a message to the user.
-	 */
-	public void showMessage(String message) {
-		MessageBox messageBox = new MessageBox(s, SWT.ICON_INFORMATION
-				| SWT.YES);
-		messageBox.setMessage(message);
-		messageBox.setText(message);
-	}
+        if (result == SWT.OK) {
+            return dialog.getPassword();
+        }
+        return null;
+    }
 
-	/*
-	 * prompts the user a series of questions.
-	 */
-	public String[] promptKeyboardInteractive(String destination, String name,
-			String instruction, String[] prompt, boolean[] echo) {
+    /*
+     * shows a message to the user.
+     */
+    public void showMessage(String message) {
+        MessageBox messageBox = new MessageBox(s, SWT.ICON_INFORMATION
+                | SWT.YES);
+        messageBox.setMessage(message);
+        messageBox.setText(message);
+    }
 
-		boolean result = promptPassword("Enter password");
+    /*
+     * prompts the user a series of questions.
+     */
+    public String[] promptKeyboardInteractive(String destination, String name,
+            String instruction, String[] prompt, boolean[] echo) {
 
-		if (result) {
-			return new String[] { getPassword() };
-		}
+        boolean result = promptPassword("Enter password");
 
-		return null;
-	}
+        if (result) {
+            return new String[] { getPassword() };
+        }
+
+        return new String[] {};
+    }
 }
