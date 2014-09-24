@@ -94,7 +94,7 @@ public class VisItSwtWidget extends Canvas implements Listener,
     /**
      * 
      */
-    int startx, starty;
+    int startx, starty, sizex, sizey;
 
     /**
      * The constructor
@@ -195,18 +195,17 @@ public class VisItSwtWidget extends Canvas implements Listener,
                         rect.height);
             }
         });
-        
+
         addDisposeListener(new DisposeListener() {
-            
+
             @Override
             public void widgetDisposed(DisposeEvent e) {
-                visitConnection.unregisterVisualization(visitWindowId, 
-                                                        VisItSwtWidget.this);  
-                
-                visitConnection.unregisterCallback(AVTDATABASEMETADATA, 
-                                                    VisItSwtWidget.this);
-                        
-                
+                visitConnection.unregisterVisualization(visitWindowId,
+                        VisItSwtWidget.this);
+
+                visitConnection.unregisterCallback(AVTDATABASEMETADATA,
+                        VisItSwtWidget.this);
+
             }
         });
     }
@@ -338,6 +337,9 @@ public class VisItSwtWidget extends Canvas implements Listener,
         if (visitConnection == null || !visitConnection.hasInitialized()) {
             return;
         }
+        Point p = getSize();
+        sizex = p.x;
+        sizey = p.y;
         startx = x;
         starty = y;
         mousePressed = true;
@@ -352,6 +354,23 @@ public class VisItSwtWidget extends Canvas implements Listener,
         if (visitConnection == null || !visitConnection.hasInitialized()) {
             return;
         }
+        if (mousePressed) {
+
+            String[] actions = new String[] { "LeftPress", "Move",
+                    "LeftRelease" };
+
+            for (int i = 0; i < actions.length; ++i) {
+                getViewerMethods().updateMouseActions(
+                        visitWindowId,
+                        actions[i],
+                        new double[] { (double) startx / (double) sizex,
+                                (double) starty / sizey },
+                        new double[] { (double) x / (double) sizex,
+                                (double) y / (double) sizey }, ctrl, shift);
+            }
+            startx = x;
+            starty = y;
+        }
     }
 
     /**
@@ -365,24 +384,6 @@ public class VisItSwtWidget extends Canvas implements Listener,
             return;
         }
 
-        if (mousePressed) {
-            Point p = getSize();
-            p.x = p.x;
-            p.y = p.y;
-
-            String[] actions = new String[] { "LeftPress", "Move",
-                    "LeftRelease" };
-
-            for (int i = 0; i < actions.length; ++i) {
-                getViewerMethods().updateMouseActions(
-                        visitWindowId,
-                        actions[i],
-                        new double[] { (double) startx / (double) p.x,
-                                (double) starty / p.y },
-                        new double[] { (double) x / (double) p.x,
-                                (double) y / (double) p.y }, ctrl, shift);
-            }
-        }
         mousePressed = false;
     }
 
