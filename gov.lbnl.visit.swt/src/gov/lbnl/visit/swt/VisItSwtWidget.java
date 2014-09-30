@@ -136,6 +136,15 @@ public class VisItSwtWidget extends Canvas implements Listener,
 
     public void activate() {
         getViewerMethods().setActiveWindow(visitWindowId);
+
+        // Initialize the mouse controls
+        // There may be a better way to accomplish this task. This was
+        // previously done in VisitPlotViewer#drawPlot(Entry). A comment to
+        // create an initialize() function in this class to achieve what these
+        // three lines do was included there.
+        mouseStart(0, 0, false, false);
+        mouseMove(0, 0, false, false);
+        mouseStop(0, 0, false, false);
     }
 
     /**
