@@ -303,7 +303,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         command.add(password);
         command.add("-cli");
         command.add("-nowin");
-        command.add("-hidden");
+        command.add("-interactions");
         return command;
     }
 
@@ -541,7 +541,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
      * @return
      */
     public boolean launch(String host, int port, String password, String dir,
-            boolean remote) {
+            boolean remote, boolean isDirect) {
 
         closePreviousConnection();
 
@@ -563,7 +563,12 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         try {
             boolean result = false;
 
-            if (LOCALHOST.equals(machine)) {
+            if(isDirect) {
+            	// / direct connection
+            	Logger.getGlobal().info("Direct Connection");
+            	result = launchDirectToRemote(host, port, password, LOCALHOST.equals(machine));
+            }
+            else if (LOCALHOST.equals(machine)) {
                 // / local-host connection
                 Logger.getGlobal().info("Launch Local");
                 result = launchLocal(host, port, password, dir);
@@ -571,10 +576,6 @@ public class VisItSwtConnection implements VisItInitializedCallback,
                 // / launch VisIt on Remote
                 Logger.getGlobal().info("Launch VisIt on Remote");
                 result = launchVisItOnRemote(host, port, password, dir);
-            } else {
-                // / direct connection
-                Logger.getGlobal().info("Direct Connection");
-                result = launchDirectToRemote(host, port, password, false);
             }
 
             mHost = machine;
