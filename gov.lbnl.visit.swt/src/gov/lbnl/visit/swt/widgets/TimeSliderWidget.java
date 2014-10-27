@@ -1,147 +1,154 @@
 package gov.lbnl.visit.swt.widgets;
 
+import gov.lbnl.visit.swt.VisItSwtConnection;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.ActionContributionItem;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.RowLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Text;
-
-import gov.lbnl.visit.swt.VisItSwtConnection;
 
 public class TimeSliderWidget extends Composite {
 
 	private VisItSwtConnection connection;
-	
-	public TimeSliderWidget(Composite parent, int flags) {
-		super(parent, flags);
-		connection = null;
-		setLayout(new RowLayout(SWT.HORIZONTAL));
+
+	/**
+	 * The set of time slider actions presented by the UI. This includes play,
+	 * stop, rewind, etc.
+	 */
+	private final List<IAction> actions;
+
+	/**
+	 *
+	 * @param parent
+	 *            A widget which will be the parent of the new instance (cannot
+	 *            be null).
+	 * @param style
+	 *            The style of widget to construct.
+	 */
+	public TimeSliderWidget(Composite parent, int style) {
+		this(parent, style, null);
+	}
+
+	/**
+	 * 
+	 * @param parent
+	 *            A widget which will be the parent of the new instance (cannot
+	 *            be null).
+	 * @param style
+	 *            The style of widget to construct.
+	 * @param conn
+	 */
+	public TimeSliderWidget(Composite parent, int style, VisItSwtConnection conn) {
+		super(parent, style);
+		
+		connection = conn;
+		
+		actions = new ArrayList<IAction>();
 		setupUI();
 	}
-	
-	public TimeSliderWidget(Composite parent, int flags, VisItSwtConnection conn) {
-		super(parent, flags);
+
+	public void setVisItSwtConnection(VisItSwtConnection conn) {
 		connection = conn;
-		setLayout(new RowLayout(SWT.HORIZONTAL));
-		setupUI();
+
+		// Enable/disable all of the actions.
+		boolean actionsEnabled = (connection != null);
+		for (IAction action : actions) {
+			action.setEnabled(actionsEnabled);
+		}
 	}
-	
-	
-	public void setVisItSwtConnection(VisItSwtConnection conn) { 
-		connection = conn;
-	}
-	
-	/*!
-	 * \brief create user interface
+
+	/**
+	 * Creates all of the actions/buttons available in the UI.
 	 */
 	private void setupUI() {
-		
 
-		Button stepBack = new Button(this, SWT.NONE);
-		stepBack.setText("Step Back");
-		
-		Button rewind = new Button(this, SWT.NONE);
-		rewind.setText("Rewind");
-		
-		Button stop = new Button(this, SWT.NONE);
-		stop.setText("Stop");
-		
-		Button play = new Button(this, SWT.NONE);
-		play.setText("Play");
-		
-		Button stepForward = new Button(this, SWT.NONE);
-		stepForward.setText("Step Forward");		
+		// Default to a RowLayout. All of the widgets added to this Composite
+		// should automatically wrap with this configured.
+		setLayout(new RowLayout(SWT.HORIZONTAL));
 
+		// We use JFace Actions to encapsulate the time slider operations. They
+		// are currently configured as push buttons, but this can be changed.
+		// Furthermore, we can add them as regular Buttons to Composites,
+		// ToolBars, and Menus by using ActionContributionItems. We can also
+		// pass ImageDescriptors to the Action constructor
+		IAction action;
+
+		// Create the step back action.
+		action = new Action("Step Back", Action.AS_PUSH_BUTTON) {
+			@Override
+			public void run() {
+				if (connection != null) {
+					connection.getViewerMethods().animationPreviousState();
+				}
+			}
+		};
+		// Set an ImageDescriptor.
+		//action.setImageDescriptor(null);
+		actions.add(action);
+
+		// Create the rewind (reverse play) action.
+		action = new Action("Rewind", Action.AS_PUSH_BUTTON) {
+			@Override
+			public void run() {
+				if (connection != null) {
+					connection.getViewerMethods().animationReversePlay();
+				}
+			}
+		};
+		actions.add(action);
+
+		// Create the stop action.
+		action = new Action("Stop", Action.AS_PUSH_BUTTON) {
+			@Override
+			public void run() {
+				if (connection != null) {
+					connection.getViewerMethods().animationStop();
+				}
+			}
+		};
+		actions.add(action);
+
+		// Create the play method.
+		action = new Action("Play", Action.AS_PUSH_BUTTON) {
+			@Override
+			public void run() {
+				if (connection != null) {
+					connection.getViewerMethods().animationPlay();
+				}
+			}
+		};
+		actions.add(action);
+
+		// Create the step forward action.
+		action = new Action("Step Forward", Action.AS_PUSH_BUTTON) {
+			@Override
+			public void run() {
+				if (connection != null) {
+					connection.getViewerMethods().animationNextState();
+				}
+			}
+		};
+		actions.add(action);
+
+		// Add all of the Actions to the Composite. This requires the use of
+		// ActionContributionItems. We could also add them to a ToolBar or Menu
+		// using ActionContributionItem's different fill methods.
+		boolean actionsEnabled = (connection != null);
+		for (IAction iAction : actions) {
+			iAction.setEnabled(actionsEnabled);
+			new ActionContributionItem(iAction).fill(this);
+		}
+
+		// Create the timestep widget.
 		Text timeSteps = new Text(this, SWT.NONE);
-		timeSteps.setText("Timesteps...");	
-		
-		stepBack.addSelectionListener(new SelectionListener() {
-			
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				if(connection == null) {
-					return;
-				}
-				connection.getViewerMethods().animationPreviousState();
-				
-			}
-			
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				widgetSelected(e);
-			}
-		});
-		
-		rewind.addSelectionListener(new SelectionListener() {
-			
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				if(connection == null) {
-					return;
-				}
-				connection.getViewerMethods().animationReversePlay();
-				
-			}
-			
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				widgetSelected(e);
-			}
-		});
-		
-		stop.addSelectionListener(new SelectionListener() {
-			
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				if(connection == null) {
-					return;
-				}
-				connection.getViewerMethods().animationStop();
-			}
-			
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				widgetSelected(e);
-			}
-		});
-		
+		timeSteps.setText("Timesteps...");
 
-		play.addSelectionListener(new SelectionListener() {
-			
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				if(connection == null) {
-					return;
-				}
-				connection.getViewerMethods().animationPlay();
-				
-			}
-			
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				widgetSelected(e);
-			}
-		});
-		
-		stepForward.addSelectionListener(new SelectionListener() {
-			
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-				if(connection == null) {
-					return;
-				}
-				connection.getViewerMethods().animationNextState();
-				
-			}
-			
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-				widgetSelected(e);
-			}
-		});
-		
 		this.redraw();
 		this.pack();
 	}
