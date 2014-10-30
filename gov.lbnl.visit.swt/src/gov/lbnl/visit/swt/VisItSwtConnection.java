@@ -304,6 +304,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         command.add("-cli");
         command.add("-nowin");
         command.add("-interactions");
+        command.add("-hide_window");
         return command;
     }
 
