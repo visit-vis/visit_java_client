@@ -278,6 +278,8 @@ public class ViewerMethods {
      */
     public synchronized void openDatabase(String filename, int timeState,
             boolean addDefaultPlots, String forcedFileType) {
+        getMetaData(filename);
+        
         mState.set(0, RPCTYPE, visitRPC.get("OpenDatabaseRPC"));
         mState.set(0, DATABASE, filename);
         mState.set(0, INTARG1, timeState);
@@ -288,8 +290,9 @@ public class ViewerMethods {
 
         synchronize();
 
+        //updateDBPluginInfo("localhost");
+        
         // / add others...
-        getMetaData(filename);
     }
 
     public synchronized void closeDatabase(String filename) {
@@ -517,7 +520,52 @@ public class ViewerMethods {
 
         synchronize();
     }
+    
+    public void animationReversePlay() {
+        mState.set(0, RPCTYPE, visitRPC.get("AnimationReversePlayRPC"));
+        mState.notify(0);
 
+        //synchronize();
+    }
+    
+
+    public void animationStop() {
+        mState.set(0, RPCTYPE, visitRPC.get("AnimationStopRPC"));
+        mState.notify(0);
+
+        synchronize();
+    }
+    
+    public void animationPlay() {
+        mState.set(0, RPCTYPE, visitRPC.get("AnimationPlayRPC"));
+        mState.notify(0);
+
+        //synchronize();
+    }
+    
+    public void animationPreviousState() {
+        mState.set(0, RPCTYPE, visitRPC.get("TimeSliderPreviousStateRPC"));
+        mState.notify(0);
+
+        synchronize();
+    }
+    
+    public void animationNextState() {
+        mState.set(0, RPCTYPE, visitRPC.get("TimeSliderNextStateRPC"));
+        mState.notify(0);
+
+        synchronize();
+    }
+    
+    public synchronized void updateDBPluginInfo(String hostName) {
+    	mState.set(0, RPCTYPE, visitRPC.get("UpdateDBPluginInfoRPC"));
+        mState.set(0, "programHost", hostName);
+        mState.notify(0);
+
+        synchronize();
+        	
+    }
+    
     public synchronized void processCommands(String commands) {
 
         int index = mState.getIndexFromTypename("ClientMethod");
