@@ -65,8 +65,7 @@ public class VisItSwtConnectionManager {
             String url = inputMap.get("url");
             int port = Integer.parseInt(inputMap.get("port"));
             String visDir = inputMap.get("visDir");
-            boolean isRemote = Boolean.valueOf(inputMap.get("isRemote"));
-            boolean isDirect = Boolean.valueOf(inputMap.get("isDirect"));
+            boolean isLaunch = Boolean.valueOf(inputMap.get("isLaunch"));
 
             // Set the parameters on the widget
             vizConnection.setParameters(username, password,
@@ -83,7 +82,7 @@ public class VisItSwtConnectionManager {
 
             // Launch the VisIt widget
             boolean result = vizConnection.launch(url, port, password, visDir,
-                    isRemote, isDirect);
+                    !isLaunch);
 
             if (result) {
                 manager.conns.put(key, vizConnection);

@@ -539,10 +539,11 @@ public class VisItSwtConnection implements VisItInitializedCallback,
      * @param port
      * @param password
      * @param dir
+     * @param notLaunch
      * @return
      */
     public boolean launch(String host, int port, String password, String dir,
-            boolean remote, boolean isDirect) {
+            boolean notLaunch) {
 
         closePreviousConnection();
 
@@ -564,7 +565,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         try {
             boolean result = false;
 
-            if(isDirect) {
+            if(notLaunch) {
             	// / direct connection
             	Logger.getGlobal().info("Direct Connection");
             	result = launchDirectToRemote(host, port, password, LOCALHOST.equals(machine));
