@@ -289,10 +289,6 @@ public class ViewerMethods {
         mState.notify(0);
 
         synchronize();
-
-        //updateDBPluginInfo("localhost");
-        
-        // / add others...
     }
 
     public synchronized void closeDatabase(String filename) {
@@ -524,8 +520,6 @@ public class ViewerMethods {
     public void animationReversePlay() {
         mState.set(0, RPCTYPE, visitRPC.get("AnimationReversePlayRPC"));
         mState.notify(0);
-
-        //synchronize();
     }
     
 
@@ -539,8 +533,6 @@ public class ViewerMethods {
     public void animationPlay() {
         mState.set(0, RPCTYPE, visitRPC.get("AnimationPlayRPC"));
         mState.notify(0);
-
-        //synchronize();
     }
     
     public void animationPreviousState() {
@@ -558,12 +550,12 @@ public class ViewerMethods {
     }
     
     public synchronized void updateDBPluginInfo(String hostName) {
-    	mState.set(0, RPCTYPE, visitRPC.get("UpdateDBPluginInfoRPC"));
+        mState.set(0, RPCTYPE, visitRPC.get("UpdateDBPluginInfoRPC"));
         mState.set(0, "programHost", hostName);
         mState.notify(0);
 
         synchronize();
-        	
+            
     }
     
     public synchronized void processCommands(String commands) {

@@ -566,11 +566,10 @@ public class VisItSwtConnection implements VisItInitializedCallback,
             boolean result = false;
 
             if(notLaunch) {
-            	// / direct connection
-            	Logger.getGlobal().info("Direct Connection");
-            	result = launchDirectToRemote(host, port, password, LOCALHOST.equals(machine));
-            }
-            else if (LOCALHOST.equals(machine)) {
+                // / direct connection
+                Logger.getGlobal().info("Direct Connection");
+                result = launchDirectToRemote(host, port, password, LOCALHOST.equals(machine));
+            } else if (LOCALHOST.equals(machine)) {
                 // / local-host connection
                 Logger.getGlobal().info("Launch Local");
                 result = launchLocal(host, port, password, dir);

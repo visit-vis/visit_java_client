@@ -10,4 +10,6 @@ Export-Package: gov.lbnl.visit.swt,
  gov.lbnl.visit.swt.widgets,
  visit.java.client
 Import-Package: com.google.gson;version="2.2.4",
- com.jcraft.jsch;version="0.1.50"
+ com.jcraft.jsch;version="0.1.50",
+ org.eclipse.core.runtime;version="3.4.0",
+ org.osgi.framework;version="1.7.0"
