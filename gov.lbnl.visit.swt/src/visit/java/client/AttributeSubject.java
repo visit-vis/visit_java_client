@@ -57,6 +57,20 @@ public class AttributeSubject {
         callbackList = new ArrayList<AttributeSubjectCallback>();
     }
 
+    public AttributeSubject(JsonElement e) {
+        update = new Updater();
+        JsonObject node = e.getAsJsonObject();
+        
+        ///TODO (fix this, this version cannot notify viewer)
+        api = new JsonObject();
+        api.add("api", node.get("api"));
+        
+        data = new JsonObject();
+        data.add("contents", node.get("data"));
+        
+        callbackList = new ArrayList<AttributeSubjectCallback>();
+    }
+    
     /**
      * @param jo
      *            JsonObject to update to
@@ -68,7 +82,25 @@ public class AttributeSubject {
             update.id = api.get("id").getAsInt();
             update.typename = api.get("typename").getAsString();
         } else {
-            data = jo;
+            if(data == null) {
+                data = jo;
+            } else {
+                JsonArray a = jo.get("contents").getAsJsonArray();
+                JsonArray b = data.get("contents").getAsJsonArray();
+                JsonArray c = new JsonArray();
+                for(int i = 0; i < a.size(); ++i) {
+                    if(a.get(i).isJsonNull() == false) {
+                        c.add(a.get(i));
+                    } else {
+                        c.add(b.get(i));
+                    }
+                }
+                for(int i = a.size(); i < b.size(); ++i) {
+                    c.add(b.get(i));
+                }
+                data.add("contents", c);
+                //System.out.println(data);
+            }
             update.clear();
             // tell all listeners object has been updated..
             for (AttributeSubjectCallback cb : callbackList) {
@@ -316,6 +348,42 @@ public class AttributeSubject {
         }
 
         return result;
+    }
+    
+    public List<AttributeSubject> getAttributeSubject(JsonElement obj, String key) {
+
+        List<AttributeSubject> list = new ArrayList<AttributeSubject>();
+        
+        if (!obj.isJsonObject() && !obj.getAsJsonObject().has("api")) {
+            return list;
+        }
+
+        JsonObject attr = obj.getAsJsonObject();
+
+        JsonObject lapi = attr.get("api").getAsJsonObject();
+        JsonArray ldata = attr.get("data").getAsJsonArray();
+
+        if (!lapi.has(key)) {
+            return list;
+        }
+
+        int index = lapi.get(key).getAsJsonObject().get(ATTRID).getAsInt();
+        String type = lapi.get(key).getAsJsonObject().get("type").getAsString();
+
+        // if this recurses further return that instead..
+        if (type.indexOf("AttributeGroup") < 0) {
+            JsonElement result = ldata.get(index);
+            list.add(new AttributeSubject(result));
+        } else if (type.indexOf("List") >= 0 || type.indexOf("Vector") >= 0) {
+            JsonArray result = getVectorAttr(lapi, ldata, index, key).getAsJsonArray();
+            for(int i = 0; i < result.size(); ++i) {
+                list.add(new AttributeSubject(result.get(i)));
+            }
+        } else {
+            JsonElement result = getObjectAttr(lapi, ldata, index, key);
+            list.add(new AttributeSubject(result));
+        }
+        return list;
     }
 
     /**

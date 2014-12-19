@@ -183,6 +183,7 @@ public class TimeSliderWidget extends Composite {
                 }
             }
         };
+        
         // Set an ImageDescriptor.
         imagePath = new Path(imagePathPrefix + "next.gif");
         imageURL = FileLocator.find(bundle, imagePath, null);

@@ -6,9 +6,11 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.*;
+
 import visit.java.client.AttributeSubject.AttributeSubjectCallback;
 
 /**
@@ -515,6 +517,108 @@ public class ViewerMethods {
         mState.notify(0);
 
         synchronize();
+    }
+ 
+    public List<String> getQueries()
+    {
+        AttributeSubject queryList = getViewerState().getAttributeSubjectFromTypename("QueryList");
+        List<String> queries = queryList.getAsStringVector("names");
+        List<String> result = new ArrayList<String>();
+        
+        List<Integer> types = queryList.getAsIntVector("types");
+        //DatabaseQuery = 0, PointQuery = 1, LineQuery = 2
+        
+        for(int i = 0; i < queries.size(); ++i)
+        {
+            if (types.get(i) == 0) {
+                result.add(queries.get(i));
+            }
+        }
+        
+        return result;
+    }
+    
+    public List<String> getQueriesOverTime()
+    {
+        AttributeSubject queryList = getViewerState().getAttributeSubjectFromTypename("QueryList");
+        List<String> queries = queryList.getAsStringVector("names");
+        List<String> result = new ArrayList<String>();
+        
+        List<Integer> types = queryList.getAsIntVector("types");
+        List<Integer> mode = queryList.getAsIntVector("queryMode");
+        
+        //DatabaseQuery = 0, PointQuery = 1, LineQuery = 2
+        //QueryOnly = 0, QueryAndTime, TimeOnly
+        
+        for(int i = 0; i < queries.size(); ++i)
+        {
+            if (types.get(i) == 0 && mode.get(i) != 0) {
+                result.add(queries.get(i));
+            }
+        }
+        
+        return result;
+    }
+    
+    public void query(String queryName) {
+        System.out.println(mState.get(0).get("queryParams"));
+        //mState.set(0, RPCTYPE, visitRPC.get("QueryRPC"));
+        //mState.notify(0);
+    }
+
+    
+    public Map<String, Integer> getTimeSliderCurrentState() {
+        
+            AttributeSubject wi = getViewerState().getAttributeSubjectFromTypename("WindowInformation");
+
+            List<String> timeSliders = wi.getAsStringVector("timeSliders");
+            List<Integer> timeSliderStates = wi.getAsIntVector("timeSliderCurrentStates");
+                    
+            Map<String,Integer> timeMap = new HashMap<String, Integer>();
+            
+            for(int i = 0; i < timeSliders.size(); ++i)
+            {
+                timeMap.put(timeSliders.get(i), timeSliderStates.get(i));
+            }
+
+            return timeMap;
+    }
+    
+    public int timeSliderGetNStates() {
+        
+        int nStates = 1;
+        
+        AttributeSubject windowInformation = getViewerState().getAttributeSubjectFromTypename("WindowInformation");
+        int active = windowInformation.getAsInt("activeTimeSlider");
+        
+        if(active == -1) {
+            return nStates;
+        }
+
+        String ts = windowInformation.getAsStringVector("timeSliders").get(active);
+        
+        AttributeSubject keyframeAttributes = getViewerState().getAttributeSubjectFromTypename("KeyframeAttributes");
+        boolean enabled = keyframeAttributes.get("enabled").getAsBoolean();
+        
+        if(enabled && ts.equals("Keyframe animation")) {
+            nStates = keyframeAttributes.getAsInt("nFrames");
+        }
+        else {
+            AttributeSubject dblist = getViewerState().getAttributeSubjectFromTypename("DatabaseCorrelationList");
+            
+            JsonArray list = dblist.get("correlations").getAsJsonArray();
+            
+            for(int i = 0; i < list.size(); ++i) {
+                AttributeSubject e = new AttributeSubject(list.get(i));
+                if(ts.equals(e.getAsString("name")))
+                {
+                    nStates = e.getAsInt("numStates");
+                    break;
+                } 
+            }
+        }
+        
+        return nStates;
     }
     
     public void animationReversePlay() {
