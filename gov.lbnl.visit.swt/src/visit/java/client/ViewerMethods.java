@@ -56,6 +56,11 @@ public class ViewerMethods {
      * 
      */
     AttributeSubject syncAtts;
+    
+    /**
+     * 
+     */
+    FileInfo databaseInfo;
 
     /**
      * The constructor
@@ -81,6 +86,52 @@ public class ViewerMethods {
                 return true;
             }
         });
+        
+        
+        AttributeSubject databaseMetaData = mState.getAttributeSubjectFromTypename("avtDatabaseMetaData");
+        
+        databaseMetaData.addCallback(new AttributeSubjectCallback() {
+			
+			@Override
+			public boolean update(AttributeSubject arg0) {
+		        FileInfo fi = new FileInfo();
+
+		        String filename = arg0.get("databaseName").getAsString();
+		        String filetype = arg0.get("fileFormat").getAsString();
+		        String description = arg0.get("databaseComment").getAsString();
+
+		        Map<String, List<String>> outputArray = new HashMap<String, List<String>>();
+
+		        String[] vartypes = new String[] { "meshes", "scalars", "vectors",
+		                "materials" };
+
+		        for (int i = 0; i < vartypes.length; ++i) {
+		            List<String> data = new ArrayList<String>();
+
+		            JsonArray array = arg0.get(vartypes[i]).getAsJsonArray();
+
+		            for (int j = 0; j < array.size(); ++j) {
+
+		                JsonObject obj = array.get(j).getAsJsonObject();
+		                String name = arg0.getAttr(obj, "name").getAsString();
+		                data.add(name);
+		            }
+
+		            outputArray.put(vartypes[i], data);
+		        }
+
+		        fi.setFileName(filename);
+		        fi.setFileType(filetype);
+		        fi.setFileDescription(description);
+
+		        fi.setMeshes(outputArray.get("meshes"));
+		        fi.setScalars(outputArray.get("scalars"));
+		        fi.setVectors(outputArray.get("vectors"));
+		        fi.setMaterials(outputArray.get("materials"));
+		        
+				return true;
+			}
+		});
 
         mutex.release();
     }
