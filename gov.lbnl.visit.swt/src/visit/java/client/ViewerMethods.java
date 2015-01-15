@@ -129,6 +129,8 @@ public class ViewerMethods {
 		        fi.setVectors(outputArray.get("vectors"));
 		        fi.setMaterials(outputArray.get("materials"));
 		        
+		        databaseInfo = fi;
+		        
 				return true;
 			}
 		});
@@ -138,6 +140,14 @@ public class ViewerMethods {
 
     public ViewerState getViewerState() {
         return mState;
+    }
+    
+    /**
+     * 
+     * @return the databaseInfo
+     */
+    public FileInfo getDatabaseInfo() {
+    	return databaseInfo;
     }
 
     /**
