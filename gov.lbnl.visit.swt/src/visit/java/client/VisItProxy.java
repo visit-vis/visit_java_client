@@ -413,6 +413,55 @@ public class VisItProxy {
             return count;
         }
 
+        private void parseEntry(StringBuilder inputBuffer, StringBuilder partialEntry) {
+            ///read between startTag & endTag..
+            ///all tags should be filled when they are of the form
+            ///["startTag"]JSON+["endTag"]
+            
+            String sTag = "[\"startTag\"]";
+            String eTag = "[\"endTag\"]";
+            
+            int startTag = inputBuffer.indexOf(sTag);
+            int endTag = inputBuffer.indexOf(eTag);
+            
+            while(true) {
+                
+                if(startTag < 0 || endTag < 0) {
+                    return;
+                }
+
+                /// read entire start tag entry..
+                int startMarker = inputBuffer.indexOf("{", startTag);
+                int endMarker = inputBuffer.lastIndexOf("}", endTag)+1;
+                
+                String entry = inputBuffer.substring(startMarker, endMarker).trim();
+                entry = entry.replace("\\\"", "");
+                
+                try {
+                    
+                    JsonElement el = gson.fromJson(entry,JsonElement.class);
+                    JsonObject jo = el.getAsJsonObject();
+
+                    // update state..
+                    VisItProxy.this.state.update(jo);
+                }catch(Exception e) {
+                    System.out.println("failed to parse:" + entry);
+                    Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
+                }
+                
+                if (VisItProxy.this.state.getStates().size() == MAX_STATES) {
+                    sem.release();
+                }
+                
+                ///end of the code match..
+                int endSequence = endTag + eTag.length();
+                inputBuffer.delete(0, endSequence);
+
+                startTag = inputBuffer.indexOf(sTag);
+                endTag = inputBuffer.indexOf(eTag);
+            }
+        }
+
         private int[] parseEntryHelper(int si, int ei, StringBuilder inputBuffer, StringBuilder partialEntry) {
             
             int mnsi = si;
@@ -437,8 +486,9 @@ public class VisItProxy {
             }
             return new int[] { mnsi, mnei };
         }
-        
-        private void parseEntry(StringBuilder inputBuffer, StringBuilder partialEntry) {
+                
+        /// version 1?
+        private void parseEntry2(StringBuilder inputBuffer, StringBuilder partialEntry) {
             // for now JSON parser has to start with object..
             int mnsi = inputBuffer.indexOf("{");
             int mnei = inputBuffer.indexOf("}");
@@ -457,6 +507,7 @@ public class VisItProxy {
                     try {
                         partialEntry.setLength(0);
                         tmp = tmp.replace("\\\"", "");
+                        
                         JsonElement el = gson.fromJson(tmp, JsonElement.class);
                         JsonObject jo = el.getAsJsonObject();
                         
@@ -490,6 +541,9 @@ public class VisItProxy {
             StringBuilder inputBuffer = new StringBuilder("");
             char[] data = new char[VisItProxy.BUFSIZE];
 
+            boolean checkVersion = false;
+            boolean version1 = false;
+            
             try {
                 while (true) {
 
@@ -500,10 +554,25 @@ public class VisItProxy {
                     if (qThread || len <= 0 || data == null) {
                         throw new StreamCorruptedException("Quitting Thread Due to Processing Failure");
                     }
-
+                    
                     inputBuffer.append(data, 0, len);
-
-                    parseEntry(inputBuffer, partialEntry);
+                    
+                    /// detect version...
+                    if(checkVersion == false) {
+                        /// assuming that the initial read is big enough to get
+                        /// the first tag..
+                        if(!inputBuffer.toString().startsWith("[\"startTag\"]")) {
+                            version1 = true;
+                        }
+                        checkVersion = true;
+                    }
+                    
+                    if(version1) { 
+                        parseEntry2(inputBuffer, partialEntry);
+                    } else {
+                        parseEntry(inputBuffer, partialEntry);
+                    }
+                    
                 }
             } catch (Exception e) {
                 ///catch Exception and Quit Thread
