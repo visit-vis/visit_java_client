@@ -406,9 +406,13 @@ public class VisItSwtWidget extends Canvas implements Listener,
         final byte[] output = rawData;
         Display.getDefault().asyncExec(new Runnable() {
             public void run() {
-                ByteArrayInputStream bis = new ByteArrayInputStream(output);
-                image = new Image(shell.getDisplay(), bis);
-                redraw();
+				// Check that the canvas is properly constructed and not
+				// disposed before attempting to draw.
+            	if (!isDisposed()) {
+	                ByteArrayInputStream bis = new ByteArrayInputStream(output);
+	                image = new Image(shell.getDisplay(), bis);
+	                redraw();
+            	}
             }
         });
     }

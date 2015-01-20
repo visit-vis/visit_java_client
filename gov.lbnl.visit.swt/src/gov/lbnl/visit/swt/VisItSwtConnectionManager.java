@@ -46,12 +46,11 @@ public class VisItSwtConnectionManager {
         return null;
     }
 
-    public static VisItSwtConnection createConnection(String key,
-            Display display, Map<String, String> inputMap) {
+	public static VisItSwtConnection createConnection(String key, Shell shell,
+			Map<String, String> inputMap) {
 
-        try {
-            VisItSwtConnection vizConnection = new VisItSwtConnection(
-                    new Shell(display));
+		try {
+			VisItSwtConnection vizConnection = new VisItSwtConnection(shell);
 
             String username = inputMap.get("username");
             String password = inputMap.get("password");
