@@ -1,5 +1,8 @@
 package gov.lbnl.visit.swt;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -38,13 +41,23 @@ public class VisItRemoteUserInfoDialog implements UserInfo,
     }
 
     public boolean promptYesNo(String str) {
-        MessageBox messageBox = new MessageBox(s, SWT.ICON_WARNING | SWT.YES
-                | SWT.NO);
-        messageBox.setMessage(str);
-        messageBox.setText("Warning");
-
-        int response = messageBox.open();
-        return response == SWT.YES;
+    	final String message = str;
+		// Open the dialog using the UI thread. Use syncExec to wait on the
+		// operation to complete.
+		final AtomicBoolean response = new AtomicBoolean();
+		s.getDisplay().syncExec(new Runnable() {
+			@Override
+			public void run() {
+				MessageBox messageBox = new MessageBox(s, SWT.ICON_WARNING
+						| SWT.YES | SWT.NO);
+				messageBox.setMessage(message);
+				messageBox.setText("Warning");
+				// Set the response to true if YES was clicked.
+				response.set(messageBox.open() == SWT.YES);
+			}
+		});
+        
+        return response.get();
     }
 
     /*
@@ -138,7 +151,7 @@ public class VisItRemoteUserInfoDialog implements UserInfo,
                 }
             });
 
-            Button okButton = new Button(buttonComp, SWT.BORDER);
+            Button okButton = new Button(buttonComp, SWT.PUSH);
             okButton.setText("OK");
             okButton.setLayoutData(new GridData(100, SWT.DEFAULT));
             okButton.addSelectionListener(new SelectionAdapter() {
@@ -168,15 +181,22 @@ public class VisItRemoteUserInfoDialog implements UserInfo,
      * @return the string typed in, if the user confirmed, else {@code null} .
      */
     private String promptPassImpl(String message) {
-
-        PasswordDialog dialog = new PasswordDialog(s);
-
-        int result = dialog.open();
-
-        if (result == SWT.OK) {
-            return dialog.getPassword();
-        }
-        return null;
+    	
+		// Open the dialog using the UI thread. Use syncExec to wait on the
+		// operation to complete.
+		final AtomicReference<String> password = new AtomicReference<String>();
+		s.getDisplay().syncExec(new Runnable() {
+			@Override
+			public void run() {
+				PasswordDialog dialog = new PasswordDialog(s);
+				if (dialog.open() == SWT.OK) {
+					// Store the password if OK was clicked.
+					password.set(dialog.getPassword());
+				}
+			}
+		});
+		// Get the password from the atomic.
+        return password.get();
     }
 
     /*
