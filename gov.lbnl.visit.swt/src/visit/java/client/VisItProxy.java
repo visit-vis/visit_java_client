@@ -540,7 +540,7 @@ public class VisItProxy {
             // holds input data buffer
             StringBuilder inputBuffer = new StringBuilder("");
             char[] data = new char[VisItProxy.BUFSIZE];
-
+            
             boolean checkVersion = false;
             boolean version1 = false;
             
@@ -548,11 +548,10 @@ public class VisItProxy {
                 while (true) {
 
                     int len = 0;
-
                     len = inputConnection.read(data);
 
                     if (qThread || len <= 0 || data == null) {
-                        throw new StreamCorruptedException("Quitting Thread Due to Processing Failure");
+                    	throw new StreamCorruptedException("Quitting Thread Due to Processing Failure");
                     }
                     
                     inputBuffer.append(data, 0, len);

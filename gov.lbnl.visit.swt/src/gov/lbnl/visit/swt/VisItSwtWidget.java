@@ -399,7 +399,7 @@ public class VisItSwtWidget extends Canvas implements Listener,
     @Override
     public void update(VISIT_CONNECTION_TYPE type, byte[] rawData) {
 
-        if (type != VISIT_CONNECTION_TYPE.IMAGE) {
+    	if (type != VISIT_CONNECTION_TYPE.IMAGE) {
             return;
         }
 

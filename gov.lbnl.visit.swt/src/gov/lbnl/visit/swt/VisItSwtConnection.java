@@ -405,28 +405,32 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         }
     }
 
-    private void initializeVisItConnection(BufferedReader input)
-            throws IOException {
-        String line = input.readLine();
-
-        // Wait until it starts to listen on port...
-        if (line == null) {
-            throw new IOException("Initial read from VisIt process failed...");
-        }
-
-        while (!line.trim().startsWith("Starting to listen on port")) {
-            line = input.readLine();
-
-            if (line == null) {
-                throw new IOException("Failed to read from VisIt process...");
-            }
-
-            if (line.trim().startsWith(
-                    "WARNING: Failed to start listening server on port")) {
-                throw new IOException("Failed to listen");
-            }
-        }
-    }
+//    private void initializeVisItConnection(BufferedReader input)
+//            throws IOException {
+//        String line = input.readLine();
+//
+//        // Wait until it starts to listen on port...
+//        if (line == null) {
+//            throw new IOException("Initial read from VisIt process failed...");
+//        }
+//
+//        while (!line.trim().startsWith("Starting to listen on port")) {
+//            line = input.readLine();
+//
+//            System.out.println(">>>>" + line);
+//            Logger.getGlobal().info(">>>> " + line);
+//
+//            if (line == null) {
+//                throw new IOException("Failed to read from VisIt process...");
+//            }
+//
+//            System.out.println(">>>" + line);
+//            if (line.trim().startsWith(
+//                    "WARNING: Failed to start listening server on port")) {
+//                throw new IOException("Failed to listen");
+//            }
+//        }
+//    }
 
     private boolean launchVisItOnRemote(String host, int port, String password,
             String dir) throws JSchException, IOException {
@@ -465,7 +469,25 @@ public class VisItSwtConnection implements VisItInitializedCallback,
 
         channel.connect();
 
-        initializeVisItConnection(input);
+        Semaphore done = new Semaphore(0);
+        
+        Thread thread = new Thread(new VisItReaderThread(input, done));
+
+        thread.setDaemon(true);
+        thread.start();
+
+        /** ! wait until thread has started VisIt */
+        try {
+            done.acquire();
+        } catch (InterruptedException e) {
+            return false;
+        }
+
+        if (!hasVisItConnected) {
+            return false;
+        }
+        
+        //initializeVisItConnection(input);
 
         mUseTunnel = true;
 
@@ -657,19 +679,33 @@ public class VisItSwtConnection implements VisItInitializedCallback,
 
         ProcessBuilder builder;
         Semaphore done;
-
+        BufferedReader reader;
+        
         VisItReaderThread(ProcessBuilder b, Semaphore d) {
             builder = b;
+            done = d;
+        }
+        
+        VisItReaderThread(BufferedReader b, Semaphore d) {
+            reader = b;
             done = d;
         }
 
         @SuppressWarnings("unused")
         public void run() {
             try {
-                process = builder.start();
-
-                BufferedReader input = new BufferedReader(
-                        new InputStreamReader(process.getInputStream()));
+            	
+            	BufferedReader input;
+            	
+            	if(reader != null) {
+            		input = reader;
+            	}
+            	else {
+	                process = builder.start();
+	                input = new BufferedReader(
+	                        new InputStreamReader(process.getInputStream()));
+            	}
+            	
                 String line = input.readLine();
 
                 // Wait until it starts to listen on port...
@@ -679,8 +715,9 @@ public class VisItSwtConnection implements VisItInitializedCallback,
                 }
                 while (true) {
                     line = input.readLine();
-
-                    Logger.getGlobal().info(">> " + line);
+                    
+                    //System.out.println(">>>" + line);
+                    //Logger.getGlobal().info(">> " + line);
 
                     if (line.trim().startsWith("Starting to listen on port")) {
                         hasVisItConnected = true;
