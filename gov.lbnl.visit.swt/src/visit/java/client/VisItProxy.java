@@ -8,6 +8,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.io.OutputStreamWriter;
 import java.io.StreamCorruptedException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.ConnectException;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -149,6 +151,18 @@ public class VisItProxy {
         mTunnelSession = ts;
     }
 
+    private Integer findRandomOpenPortOnAllLocalInterfaces() {
+    	try {
+	    	ServerSocket socket = new ServerSocket(0);
+	    	int lport = socket.getLocalPort();
+	    	socket.close();
+	    	return lport;
+    	} catch(IOException e) {
+    		
+    	}
+		return -1;
+      }
+    
     /**
      * @param host
      * @param port
@@ -200,9 +214,11 @@ public class VisItProxy {
             }
             
             if (mUseTunnel) {
+            	String remotePort = visitPort;
+            	visitPort = Integer.toString(findRandomOpenPortOnAllLocalInterfaces());
                 mTunnelSession.setPortForwardingL(
                         Integer.parseInt(visitPort), LOCALHOST,
-                        Integer.parseInt(visitPort));
+                        Integer.parseInt(remotePort));
             }
 
             socket.close();
@@ -289,7 +305,21 @@ public class VisItProxy {
     }
 
     public void disconnect() {
+    	
         getViewerMethods().close();
+        
+        if(mUseTunnel) {
+    		try {
+				mTunnelSession.delPortForwardingL(Integer.parseInt(visitPort));
+			} catch (NumberFormatException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (JSchException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+    	}
+        
         threadRunnable.quitThread();
         thread.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
 
@@ -551,7 +581,8 @@ public class VisItProxy {
                     len = inputConnection.read(data);
 
                     if (qThread || len <= 0 || data == null) {
-                    	throw new StreamCorruptedException("Quitting Thread Due to Processing Failure");
+                    	Logger.getGlobal().log(Level.INFO, "VisIt Buffer returned empty");
+                    	break;
                     }
                     
                     inputBuffer.append(data, 0, len);
@@ -575,7 +606,7 @@ public class VisItProxy {
                 }
             } catch (Exception e) {
                 ///catch Exception and Quit Thread
-                Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
+                Logger.getGlobal().log(Level.INFO, e.getMessage(), e);
             }
         }
     }

@@ -484,6 +484,7 @@ public class ViewerMethods {
         
         obj.add(ACTION, new JsonPrimitive("RegisterNewWindow"));
         obj.add(WINDOWID, new JsonPrimitive(windowId));
+        obj.add("type", new JsonPrimitive("Image"));
 
         mState.set(0, RPCTYPE, visitRPC.get(EXPORTRPC));
         mState.set(0, STRINGARG1, obj.toString());

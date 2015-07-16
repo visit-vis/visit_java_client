@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.ServerSocket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -82,6 +83,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
     private ChannelExec channel = null;
     private Session gateway = null;
     private Session session = null;
+    private boolean externalSession = false;
 
     private String mGatewayUser = "";
     private String mGateway = "";
@@ -112,6 +114,10 @@ public class VisItSwtConnection implements VisItInitializedCallback,
 
     public VisItProxy getVisItProxy() {
         return client;
+    }
+    
+    public Session getSession() {
+    	return session;
     }
 
     public String getHostname() {
@@ -284,8 +290,15 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         if (channel != null) {
             channel.disconnect();
         }
-        if (session != null) {
-            session.disconnect();
+        if (session != null && !externalSession) {
+        	if(externalSession) {
+        		try {
+					session.delPortForwardingL(mPort);
+				} catch (JSchException e) {
+				}
+    		} else {
+    			session.disconnect();
+    		}
         }
         if (gateway != null) {
             gateway.disconnect();
@@ -299,8 +312,12 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         command.add(executable);
         command.add("-shared_port");
         command.add(Integer.toString(port));
-        command.add("-shared_password");
-        command.add(password);
+        
+        if(password.length() > 0) {
+	        command.add("-shared_password");
+	        command.add(password);
+        }
+        
         command.add("-cli");
         command.add("-nowin");
         command.add("-interactions");
@@ -347,7 +364,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
 
         final Semaphore done = new Semaphore(0);
 
-        Thread thread = new Thread(new VisItReaderThread(builder, done));
+        VisItReaderThread readerThread = new VisItReaderThread(builder, done);
+        Thread thread = new Thread(readerThread);
 
         thread.setDaemon(true);
         thread.start();
@@ -362,7 +380,24 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         if (!hasVisItConnected) {
             return false;
         }
-
+        
+        if(port == -1) {
+        	//port = readerThread.getListenPort();
+			mPort = findRandomOpenPortOnAllLocalInterfaces();
+			port = mPort;
+			int lport = readerThread.getListenPort();
+			if(mUseTunnel) {
+				try {
+					session.setPortForwardingL(mPort, session.getHost(), lport);
+				} catch (JSchException e) {
+				}
+			}
+        }
+        
+        if(password.length() == 0) {
+        	password = readerThread.getPassword();
+        }
+        
         // Now that VisIt has started connect to it..
         connect(host, port);
 
@@ -390,6 +425,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         if (gateway == null) {
             // directly connect..
             session = jsch.getSession(proxyInfo[0], proxyInfo[1]);
+            externalSession = false;
             session.setUserInfo(ui);
             session.connect();
 
@@ -399,6 +435,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         } else {
             // connect to localhost
             session = jsch.getSession(mGatewayUser, LOCALHOST, mGatewayPort);
+            externalSession = false;
             session.setUserInfo(ui);
             session.connect();
             session.setPortForwardingL(port, LOCALHOST, port);
@@ -471,7 +508,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
 
         Semaphore done = new Semaphore(0);
         
-        Thread thread = new Thread(new VisItReaderThread(input, done));
+        VisItReaderThread readerThread = new VisItReaderThread(input, done);
+        Thread thread = new Thread(readerThread);
 
         thread.setDaemon(true);
         thread.start();
@@ -487,10 +525,22 @@ public class VisItSwtConnection implements VisItInitializedCallback,
             return false;
         }
         
-        //initializeVisItConnection(input);
-
         mUseTunnel = true;
 
+        if(port == -1) {
+        	//port = readerThread.getListenPort();
+			mPort = findRandomOpenPortOnAllLocalInterfaces();
+			port = mPort;
+			int lport = readerThread.getListenPort();
+			if(mUseTunnel) {
+				session.setPortForwardingL(mPort, session.getHost(), lport);
+			}
+        }
+        
+        if(password.length() == 0) {
+        	password = readerThread.getPassword();
+        }
+        
         connect(mUseTunnel ? LOCALHOST : proxyInfo[1], port);
 
         return true;
@@ -611,6 +661,93 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         }
         return false;
     }
+    
+    private Integer findRandomOpenPortOnAllLocalInterfaces() {
+    	try {
+	    	ServerSocket socket = new ServerSocket(0);
+	    	int lport = socket.getLocalPort();
+	    	socket.close();
+	    	return lport;
+    	} catch(IOException e) {
+    		
+    	}
+		return -1;
+      }
+    
+    public boolean launch(Session s, String dir, int port, String password) {
+
+    	try {
+    		session = s;
+    		externalSession = true;
+    		
+    		channel = (ChannelExec) session.openChannel("exec");
+
+    		List<String> command = constructCommand(dir + "/visit", dir, port,
+    				password);
+    		String commandString = "";
+    		for (int i = 0; i < command.size(); ++i) {
+    			commandString += command.get(i) + " ";
+    		}
+    		commandString = commandString.trim();
+
+    		Logger.getGlobal().info("Launching VisIt on " + commandString);
+
+    		channel.setCommand(commandString);
+    		channel.setInputStream(System.in, true);
+
+    		BufferedReader input = new BufferedReader(new InputStreamReader(
+    				channel.getExtInputStream()));
+
+    		channel.connect();
+
+    		Semaphore done = new Semaphore(0);
+
+    		VisItReaderThread readerThread = new VisItReaderThread(input, done);
+    		Thread thread = new Thread(readerThread);
+
+    		thread.setDaemon(true);
+    		thread.start();
+
+    		/** ! wait until thread has started VisIt */
+    		try {
+    			done.acquire();
+    		} catch (InterruptedException e) {
+    			return false;
+    		}
+
+    		if (!hasVisItConnected) {
+    			return false;
+    		}
+
+    		mUseTunnel = true;
+    		
+    		mHost = "";
+            mPort = port;
+            mDir = dir;
+    		
+            if(port == -1) {
+    			mPort = findRandomOpenPortOnAllLocalInterfaces();
+    			port = mPort;
+    			int lport = readerThread.getListenPort();
+    			if(mUseTunnel) {
+    				session.setPortForwardingL(mPort, session.getHost(), lport);
+    			}
+    		}
+    		
+    		if(password.length() == 0) {
+    			password = readerThread.getPassword();
+    		}
+    		
+            
+    		connect(LOCALHOST, port);
+
+    	} catch (JSchException | IOException e1) {
+			Logger.getGlobal().log(Level.INFO, e1.getMessage(), e1);
+			return false;
+		}
+    	return true;
+    }
+
 
     /**
      * 
@@ -652,6 +789,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
 
             int windowId = subject.getAttr(obj, "windowId").getAsInt();
 
+            System.out.println("Updating: " + windowId);
             if (!windowCallbacks.containsKey(windowId)) {
                 continue;
             }
@@ -680,6 +818,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         ProcessBuilder builder;
         Semaphore done;
         BufferedReader reader;
+        int listenPort = 1;
+        String password = "";
         
         VisItReaderThread(ProcessBuilder b, Semaphore d) {
             builder = b;
@@ -689,6 +829,14 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         VisItReaderThread(BufferedReader b, Semaphore d) {
             reader = b;
             done = d;
+        }
+        
+        int getListenPort() {
+        	return listenPort;
+        }
+        
+        String getPassword() {
+        	return password;
         }
 
         @SuppressWarnings("unused")
@@ -701,7 +849,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
             		input = reader;
             	}
             	else {
-	                process = builder.start();
+	                builder.redirectErrorStream(true);
+            		process = builder.start();
 	                input = new BufferedReader(
 	                        new InputStreamReader(process.getInputStream()));
             	}
@@ -713,21 +862,36 @@ public class VisItSwtConnection implements VisItInitializedCallback,
                     throw new IOException(
                             "Failed initial read from VisIt process...");
                 }
+                Logger.getGlobal().info(">>>> " + line);
                 while (true) {
                     line = input.readLine();
                     
                     //System.out.println(">>>" + line);
-                    //Logger.getGlobal().info(">> " + line);
+                    Logger.getGlobal().info(">> " + line);
 
-                    if (line.trim().startsWith("Starting to listen on port")) {
+                    if (line == null) {
+                    	if(hasVisItConnected) {
+                            Logger.getGlobal().info("Ending communication with VisIt...");
+                            break;
+                    	} else {
+	                        throw new IOException(
+	                                "VisIt Process has ended...");
+                    	}
+                    }
+                    
+                    String sharedString = "Shared Key: ";
+                    if(line.trim().startsWith(sharedString)) {
+                    	password = line.substring(sharedString.length()).trim();
+                    }
+                    
+                    String listenString = "Starting to listen on port: ";
+                    if (line.trim().startsWith(listenString)) {
+                    	String portString = line.substring(listenString.length()).trim();
+                    	listenPort = Integer.parseInt(portString);
                         hasVisItConnected = true;
                         done.release();
                     }
 
-                    if (line == null) {
-                        throw new IOException(
-                                "Failed to read from VisIt process...");
-                    }
                     if (line.trim()
                             .startsWith(
                                     "WARNING: Failed to start listening server on port")) {
