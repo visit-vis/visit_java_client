@@ -322,6 +322,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         command.add("-nowin");
         command.add("-interactions");
         command.add("-hide_window");
+        command.add("-runcode");
+        command.add("\"while True: import time; time.sleep(1)\"");
         return command;
     }
 
@@ -753,7 +755,6 @@ public class VisItSwtConnection implements VisItInitializedCallback,
      * 
      */
     public void close() {
-
         client.disconnect();
         closePreviousConnection();
     }
@@ -789,7 +790,6 @@ public class VisItSwtConnection implements VisItInitializedCallback,
 
             int windowId = subject.getAttr(obj, "windowId").getAsInt();
 
-            System.out.println("Updating: " + windowId);
             if (!windowCallbacks.containsKey(windowId)) {
                 continue;
             }
