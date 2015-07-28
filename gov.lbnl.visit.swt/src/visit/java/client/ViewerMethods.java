@@ -128,8 +128,24 @@ public class ViewerMethods {
 		        fi.setScalars(outputArray.get("scalars"));
 		        fi.setVectors(outputArray.get("vectors"));
 		        fi.setMaterials(outputArray.get("materials"));
-		        
-		        databaseInfo = fi;
+
+		        ///TODO: check if cyclesAreAccurate & timesAreAccurate fields..
+	            JsonArray timesArray = arg0.get("times").getAsJsonArray();
+		        ArrayList<Float> times = new ArrayList<Float>();
+	            for(int i = 0; i < timesArray.size(); ++i) {
+	            	times.add(timesArray.get(i).getAsFloat());
+	            }
+	            
+	            JsonArray cycleArray = arg0.get("cycles").getAsJsonArray();
+	            ArrayList<Integer> cycles = new ArrayList<Integer>();
+	            for(int i = 0; i < cycleArray.size(); ++i) {
+	            	cycles.add(cycleArray.get(i).getAsInt());
+	            }
+	            
+	            fi.setTimes(times);
+	            fi.setCycles(cycles);
+	            
+	            databaseInfo = fi;
 		        
 				return true;
 			}
@@ -484,6 +500,7 @@ public class ViewerMethods {
         
         obj.add(ACTION, new JsonPrimitive("RegisterNewWindow"));
         obj.add(WINDOWID, new JsonPrimitive(windowId));
+        obj.add("type", new JsonPrimitive("Image"));
 
         mState.set(0, RPCTYPE, visitRPC.get(EXPORTRPC));
         mState.set(0, STRINGARG1, obj.toString());

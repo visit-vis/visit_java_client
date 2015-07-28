@@ -20,6 +20,9 @@ public class FileInfo {
     private List<String> vectors;
     private List<String> materials;
     private List<String> meshes;
+    
+    private List<Float> times;
+    private List<Integer> cycles;
 
     public FileInfo() {
         filename = "";
@@ -30,6 +33,27 @@ public class FileInfo {
         vectors = new ArrayList<String>();
         materials = new ArrayList<String>();
         meshes = new ArrayList<String>();
+    
+        times = new ArrayList<Float>();
+        cycles = new ArrayList<Integer>();
+    }
+    
+    public List<Float> getTimes() {
+    	return times;
+    }
+    
+    public void setTimes(List<Float> v) {
+        times.clear();
+        times.addAll(v);
+    }
+    
+    public List<Integer> getCycles() {
+    	return cycles;
+    }    
+    
+    public void setCycles(List<Integer> v) {
+        cycles.clear();
+        cycles.addAll(v);
     }
     
     public void setFileName(String file) {

@@ -13,6 +13,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.SWTException;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
@@ -164,14 +165,15 @@ public class VisItSwtWidget extends Canvas implements Listener,
         // / if window Id is -1 then add a new window
         if (visitWindowId == -1) {
             List<Integer> wIds = visitConnection.getWindowIds();
-
+            
             if (wIds.isEmpty()) {
                 // VisIt creates 1 window by default..
                 visitWindowId = 1;
             } else {
                 getViewerMethods().addWindow();
                 List<Integer> nIds = visitConnection.getWindowIds();
-
+                
+                
                 Set<Integer> s1 = new HashSet<Integer>();
                 s1.addAll(nIds);
                 s1.removeAll(wIds);
@@ -410,7 +412,11 @@ public class VisItSwtWidget extends Canvas implements Listener,
 				// disposed before attempting to draw.
             	if (!isDisposed()) {
 	                ByteArrayInputStream bis = new ByteArrayInputStream(output);
-	                image = new Image(shell.getDisplay(), bis);
+	                try {
+	                	image = new Image(shell.getDisplay(), bis);
+	                } 
+	                catch(SWTException e) {
+	                }
 	                redraw();
             	}
             }
