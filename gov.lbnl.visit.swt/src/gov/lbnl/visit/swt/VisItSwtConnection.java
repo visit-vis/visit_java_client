@@ -341,6 +341,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         command.add("-nowin");
         command.add("-interactions");
         command.add("-hide_window");
+        command.add("-runcode");
+        command.add("\"while 1: import time; time.sleep(5)\"");   
         return command;
     }
 
@@ -691,6 +693,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
     		session = s;
     		externalSession = true;
     		
+    		//s.setServerAliveInterval(30000);
     		channel = (ChannelExec) session.openChannel("exec");
 
     		List<String> command = constructCommand(dir + "/visit", dir, port,

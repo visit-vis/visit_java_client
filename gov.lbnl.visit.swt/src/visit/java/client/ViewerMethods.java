@@ -774,9 +774,12 @@ public class ViewerMethods {
             // reset value
             syncAtts.set(SYNCTAG, new JsonPrimitive(-1));
 
-            mutex.acquire();
+            //mutex.acquire();
+            mutex.tryAcquire(30, TimeUnit.SECONDS);
+            
         } catch (InterruptedException e) {
             // ignore InterruptedException
+        	mutex.release(0);
         }
     }
 }
