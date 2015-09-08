@@ -1,6 +1,7 @@
 package gov.lbnl.visit.swt.widgets;
 
 import gov.lbnl.visit.swt.VisItSwtConnection;
+import visit.java.client.components.TimeSlider;
 
 import java.net.URL;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ import org.osgi.framework.FrameworkUtil;
 public class TimeSliderWidget extends Composite {
 
     private VisItSwtConnection connection;
+    private TimeSlider ts;
 
     /**
      * The set of time slider actions presented by the UI. This includes play,
@@ -61,6 +63,8 @@ public class TimeSliderWidget extends Composite {
         connection = conn;
 
         actions = new ArrayList<IAction>();
+        
+        ts = new TimeSlider();
         setupUI();
     }
 
@@ -93,23 +97,19 @@ public class TimeSliderWidget extends Composite {
         IAction action;
 
         // Get the resources we will need for setting the ImageDescriptors
-        Bundle bundle = FrameworkUtil.getBundle(getClass());
-        Path imagePath;
-        String imagePathPrefix = "icons" + System.getProperty("file.separator");
+        Class<?> resourceClass = TimeSliderWidget.class;
+        
         URL imageURL;
 
         // ---- Create the step back action. ---- //
         action = new Action(null, Action.AS_PUSH_BUTTON) {
             @Override
             public void run() {
-                if (connection != null) {
-                    connection.getViewerMethods().animationPreviousState();
-                }
+                ts.previousState();
             }
         };
         // Set an ImageDescriptor.
-        imagePath = new Path(imagePathPrefix + "previous.gif");
-        imageURL = FileLocator.find(bundle, imagePath, null);
+        imageURL = resourceClass.getResource("/icons/previous.gif");
         action.setImageDescriptor(ImageDescriptor.createFromURL(imageURL));
         // Set the tool tip text
         action.setToolTipText("Previous time step");
@@ -121,14 +121,11 @@ public class TimeSliderWidget extends Composite {
         action = new Action(null, Action.AS_PUSH_BUTTON) {
             @Override
             public void run() {
-                if (connection != null) {
-                    connection.getViewerMethods().animationReversePlay();
-                }
+            	ts.reversePlay();
             }
         };
         // Set an ImageDescriptor.
-        imagePath = new Path(imagePathPrefix + "play_rev.gif");
-        imageURL = FileLocator.find(bundle, imagePath, null);
+        imageURL = resourceClass.getResource("/icons/play_rev.gif");
         action.setImageDescriptor(ImageDescriptor.createFromURL(imageURL));
         // Set the tool tip text
         action.setToolTipText("Rewind");
@@ -140,14 +137,12 @@ public class TimeSliderWidget extends Composite {
         action = new Action(null, Action.AS_PUSH_BUTTON) {
             @Override
             public void run() {
-                if (connection != null) {
-                    connection.getViewerMethods().animationStop();
-                }
+            	ts.stop();
             }
         };
+        
         // Set an ImageDescriptor.
-        imagePath = new Path(imagePathPrefix + "pause.gif");
-        imageURL = FileLocator.find(bundle, imagePath, null);
+        imageURL = resourceClass.getResource("/icons/pause.gif");
         action.setImageDescriptor(ImageDescriptor.createFromURL(imageURL));
         // Set the tool tip text
         action.setToolTipText("Pause");
@@ -159,14 +154,11 @@ public class TimeSliderWidget extends Composite {
         action = new Action(null, Action.AS_PUSH_BUTTON) {
             @Override
             public void run() {
-                if (connection != null) {
-                    connection.getViewerMethods().animationPlay();
-                }
+            	ts.play();
             }
         };
         // Set an ImageDescriptor.
-        imagePath = new Path(imagePathPrefix + "play.gif");
-        imageURL = FileLocator.find(bundle, imagePath, null);
+        imageURL = resourceClass.getResource("/icons/play.gif");
         action.setImageDescriptor(ImageDescriptor.createFromURL(imageURL));
         // Set the tool tip text
         action.setToolTipText("Play");
@@ -178,15 +170,12 @@ public class TimeSliderWidget extends Composite {
         action = new Action(null, Action.AS_PUSH_BUTTON) {
             @Override
             public void run() {
-                if (connection != null) {
-                    connection.getViewerMethods().animationNextState();
-                }
+                ts.nextState();
             }
         };
         
         // Set an ImageDescriptor.
-        imagePath = new Path(imagePathPrefix + "next.gif");
-        imageURL = FileLocator.find(bundle, imagePath, null);
+        imageURL = resourceClass.getResource("/icons/next.gif");
         action.setImageDescriptor(ImageDescriptor.createFromURL(imageURL));
         // Set the tool tip text
         action.setToolTipText("Next time step");
@@ -204,39 +193,6 @@ public class TimeSliderWidget extends Composite {
             iAction.setEnabled(actionsEnabled);
             new ActionContributionItem(iAction).fill(this);
         }
-
-        // TODO Implement the backend functionality for this.
-        // // Create the text field to set the time. //
-        // Composite timeComp = new Composite(this, SWT.NONE);
-        // timeComp.setLayout(new GridLayout(2, false));
-        // Label timeLabel = new Label(timeComp, SWT.NONE);
-        // timeLabel.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, false,
-        //        true));
-        // timeLabel.setText("Time:");
-        // final Text timeText = new Text(timeComp, SWT.SINGLE | SWT.BORDER);
-        // timeText.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true, true));
-        // timeText.addSelectionListener(new SelectionListener() {
-        //
-        //     @Override
-        //     public void widgetSelected(SelectionEvent e) {
-        //         // Not called for Text anyway.
-        //     }
-        //
-        //     @Override
-        //     public void widgetDefaultSelected(SelectionEvent e) {
-        //         // For SWT.SINGLE style Text, this is called when enter is
-        //         // pressed when in the Text.
-        //         String timeStr = timeText.getText();
-        //         // Call the appropriate method to set the frame of the rendered
-        //         // image to the entered time.
-        //         // TODO Parse the String to the appropriate data type. This
-        //         // might be String but could be an int, float, double, or
-        //         // something else. Also make sure the user has entered a valid
-        //         // value.
-        //     }
-        // });
-        // timeText.setEnabled(actionsEnabled);
-        // // -------------------------------------- //
 
         this.redraw();
         this.pack();
