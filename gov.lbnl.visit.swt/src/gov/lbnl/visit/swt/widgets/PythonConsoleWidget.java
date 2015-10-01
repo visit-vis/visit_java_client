@@ -1,17 +1,23 @@
 package gov.lbnl.visit.swt.widgets;
 
+import java.util.List;
+
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
 import gov.lbnl.visit.swt.VisItSwtConnection;
 import visit.java.client.components.PythonConsole;
+import visit.java.client.components.PythonConsole.PythonConsoleCallback;
 
 public class PythonConsoleWidget extends VisItWidget {
 	
@@ -25,9 +31,9 @@ public class PythonConsoleWidget extends VisItWidget {
     * @param style
     *            The style of widget to construct.
     */
-   public PythonConsoleWidget(Composite parent, int style) {
-       this(parent, style, null);
-   }
+//   public PythonConsoleWidget(Composite parent, int style) {
+//       this(parent, style, null);
+//   }
 
    /**
     * 
@@ -41,7 +47,7 @@ public class PythonConsoleWidget extends VisItWidget {
    public PythonConsoleWidget(Composite parent, int style, VisItSwtConnection conn) {
        super(parent, style, conn);
        
-       console = new PythonConsole();
+       console = new PythonConsole(conn.getViewerMethods());
        setupUI();
    }
    
@@ -54,6 +60,29 @@ public class PythonConsoleWidget extends VisItWidget {
 												SWT.WRAP | SWT.V_SCROLL | SWT.READ_ONLY);
 		history.setLayoutData(new GridData(GridData.FILL_BOTH));
 
+
+		final PythonConsoleCallback pcb = new PythonConsoleCallback() {
+			
+			public void response(List<String> r) {
+				
+				final List<String> vec = r;
+				
+				Display.getDefault().asyncExec(new Runnable() {
+					@Override
+					public void run() {
+						for (int i = 0; i < vec.size(); ++i) {
+							history.append(vec.get(i) + "\n");
+						}
+
+						// Move the cursor to the end of the console
+						history.setSelection(history.getText().length());
+					}
+				});
+			}
+		};
+		
+		console.register(pcb);
+
 		// Create a multiple-line text field
 		new Label(this, SWT.NONE).setText("Commands:");
 		final Text input = new Text(this, SWT.MULTI | SWT.BORDER | SWT.WRAP | SWT.V_SCROLL);
@@ -64,7 +93,6 @@ public class PythonConsoleWidget extends VisItWidget {
 	    
 	    Button interpret = new Button(comp, SWT.BORDER | SWT.PUSH);
 	    interpret.setText("Interpret");
-	    
 	    
 	    interpret.addSelectionListener(new SelectionListener() {
 			
@@ -81,7 +109,15 @@ public class PythonConsoleWidget extends VisItWidget {
 			public void widgetDefaultSelected(SelectionEvent e) {
 			}
 		});
-
+	    
+	    this.addDisposeListener(new DisposeListener() {
+			
+			@Override
+			public void widgetDisposed(DisposeEvent e) {
+				console.unregister(pcb);
+				console.cleanup();
+			}
+		});
 	}
 
 }

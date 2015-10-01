@@ -17,8 +17,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+//import java.util.logging.Level;
+//import java.util.logging.Logger;
 
 import javax.xml.bind.DatatypeConverter;
 
@@ -39,6 +39,9 @@ import visit.java.client.ViewerMethods;
 import visit.java.client.ViewerState;
 import visit.java.client.VisItProxy;
 import visit.java.client.VisItProxy.VisItInitializedCallback;
+import visit.java.client.components.MessageAttributes;
+import visit.java.client.components.MessageAttributes.MessageAttributesCallback;
+import visit.java.client.components.MessageAttributes.Severity;
 
 /**
  * @author hari
@@ -48,10 +51,6 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         AttributeSubjectCallback {
 
     static final String LOCALHOST = "localhost";
-
-    public enum VisItMessageSeverity { 
-    	Error, Warning, Message, ErrorClear, Information 
-    };
     
     public enum VISIT_CONNECTION_TYPE {
         CONTROL, IMAGE, DATA
@@ -61,8 +60,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         public void update(VISIT_CONNECTION_TYPE type, byte[] rawData);
     }
     
-    public interface VisItMessageSeverityCallback {
-    	public void message(VisItMessageSeverity severity, String message);
+    public interface VisItMessageCallback {
+    	public void message(MessageAttributes.Severity severity, String message);
     }
 
     private class VisItConnectionStruct {
@@ -83,6 +82,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
      * The VisIt connection manager.
      */
     private VisItProxy client;
+    
+    MessageAttributes messageAtts;
 
     Process process = null;
 
@@ -103,7 +104,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
     private String mDir = "";
 
     private Map<Integer, ArrayList<VisItConnectionStruct>> windowCallbacks;
-    private VisItMessageSeverityCallback vmscb = null;
+    private ArrayList<VisItMessageCallback> vmscbList = new ArrayList<VisItMessageCallback>();
     
     /**
      * The status of the VisIt launch.
@@ -165,15 +166,34 @@ public class VisItSwtConnection implements VisItInitializedCallback,
      */
     @Override
     public void initialized() {
-        hasInitialized = true;
-
-        /** register client information */
+    	/** register client information */
         client.getViewerState().registerCallback("ViewerClientInformation",
                 this);
-        client.getViewerState().registerCallback("MessageAttributes",
-                this);
+        
+        messageAtts = new MessageAttributes(client.getViewerMethods());
+        messageAtts.register(new MessageAttributesCallback() {
+			
+			@Override
+			public void message(Severity severity, String msg) {
+				for(int i = 0; i < vmscbList.size(); ++i) {
+					vmscbList.get(i).message(severity, msg);
+				}
+			}
+		});
+        
+        hasInitialized = true;
     }
 
+    /**
+     * Can be called from any thread...
+     * @param severity
+     * @param message
+     */
+    private synchronized void messageStatus(MessageAttributes.Severity severity, String message) {
+    	for(int i = 0; i < vmscbList.size(); ++i) {
+    		vmscbList.get(i).message(severity, message);
+    	}
+    }
     /**
      * 
      * @return
@@ -182,12 +202,22 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         return hasInitialized;
     }
     
-    public void registerVisItMessageCallback(VisItMessageSeverityCallback cb) {
-    	vmscb = cb;
+    public void cleanup() {
+    	if(!hasInitialized()) return;
+    	
+    	vmscbList.clear();
+    	windowCallbacks.clear();
+    	
+        client.getViewerState().unregisterCallback("ViewerClientInformation", this);
+        messageAtts.cleanup();
     }
     
-    public void unregisterVisItMessageCallback(VisItMessageSeverityCallback cb) {
-    	vmscb = null;
+    public boolean registerVisItMessageCallback(VisItMessageCallback cb) {
+    	return vmscbList.add(cb);
+    }
+    
+    public boolean unregisterVisItMessageCallback(VisItMessageCallback cb) {
+    	return vmscbList.remove(cb);
     }
 
     /** ! generic callback */
@@ -221,6 +251,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         struct.callback = callback;
         struct.setConnType(type);
         list.add(struct);
+        
         return true;
     }
     
@@ -286,7 +317,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         return true;
     }
 
-    public static boolean isThisMyIpAddress(InetAddress addr) {
+    public boolean isThisMyIpAddress(InetAddress addr) {
         // Check if the address is a valid special local or loop back
         if (addr.isAnyLocalAddress() || addr.isLoopbackAddress()) {
             return true;
@@ -296,7 +327,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
             return NetworkInterface.getByInetAddress(addr) != null;
         } catch (SocketException e) {
 
-            Logger.getGlobal().log(Level.INFO, e.getMessage(), e);
+            //Logger.getGlobal().log(Level.INFO, e.getMessage(), e);
+        	messageStatus(Severity.Information, e.getMessage());
             return false;
         }
     }
@@ -341,7 +373,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         command.add("-nowin");
         command.add("-interactions");
         command.add("-hide_window");
-        command.add("-sleepmode");
+        //command.add("-sleepmode");
         //command.add("-runcode");
         //command.add("\"while 1: import time; time.sleep(1)\"");   
         return command;
@@ -371,8 +403,9 @@ public class VisItSwtConnection implements VisItInitializedCallback,
                 /// try windows.
                 if (!new File(executable).exists()) {               
                     // return false as VisIt executable does not exist
-                    Logger.getGlobal().severe("VisIt executable was not found");
-                    return false;
+                    //Logger.getGlobal().severe("VisIt executable was not found");
+                    messageStatus(Severity.Error, "VisIt executable was not found");
+                	return false;
                 }
             }
         }
@@ -510,8 +543,9 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         }
         commandString = commandString.trim();
 
-        Logger.getGlobal().info("Launching VisIt on " + commandString);
-        
+        //Logger.getGlobal().info("Launching VisIt on " + commandString);
+        messageStatus(Severity.Information, "Launching VisIt on " + commandString);
+
         channel.setCommand(commandString);
         channel.setInputStream(System.in, true);
 
@@ -644,7 +678,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
                 }
             } catch (UnknownHostException e) {
                 // / suppress unknown host exception.
-                Logger.getGlobal().log(Level.INFO, e.getMessage(), e);
+                //Logger.getGlobal().log(Level.INFO, e.getMessage(), e);
+                messageStatus(Severity.Information, e.getMessage());
             }
         }
 
@@ -653,15 +688,18 @@ public class VisItSwtConnection implements VisItInitializedCallback,
 
             if(notLaunch) {
                 // / direct connection
-                Logger.getGlobal().info("Direct Connection");
+                //Logger.getGlobal().info("Direct Connection");
+                messageStatus(Severity.Information, "Direct Connection");
                 result = launchDirectToRemote(host, port, password, LOCALHOST.equals(machine));
             } else if (LOCALHOST.equals(machine)) {
                 // / local-host connection
-                Logger.getGlobal().info("Launch Local" + host + " " + port + " " + password + " " + dir);
+                //Logger.getGlobal().info("Launch Local" + host + " " + port + " " + password + " " + dir);
+                messageStatus(Severity.Information, "Launch Local" + host + " " + port + " " + password + " " + dir);
                 result = launchLocal(host, port, password, dir);
             } else if (dir.length() > 0) {
                 // / launch VisIt on Remote
-                Logger.getGlobal().info("Launch VisIt on Remote");
+                //Logger.getGlobal().info("Launch VisIt on Remote");
+                messageStatus(Severity.Information, "Launch VisIt on Remote");
                 result = launchVisItOnRemote(host, port, password, dir);
             }
 
@@ -671,7 +709,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
 
             return result;
         } catch (Exception e) {
-            Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
+            //Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
+        	messageStatus(Severity.Error, e.getMessage());
         }
         return false;
     }
@@ -705,8 +744,8 @@ public class VisItSwtConnection implements VisItInitializedCallback,
     		}
     		commandString = commandString.trim();
 
-    		Logger.getGlobal().info("Launching VisIt on " + commandString);
-
+    		//Logger.getGlobal().info("Launching VisIt on " + commandString);
+    		messageStatus(Severity.Information, "Launching VisIt on " + commandString);
     		channel.setCommand(commandString);
     		channel.setInputStream(System.in, true);
 
@@ -752,13 +791,13 @@ public class VisItSwtConnection implements VisItInitializedCallback,
     		if(password.length() == 0) {
     			password = readerThread.getPassword();
     		}
-    		
-            
+    		 
     		connect(LOCALHOST, port);
 
     	} catch (JSchException | IOException e1) {
-			Logger.getGlobal().log(Level.INFO, e1.getMessage(), e1);
-			return false;
+			//Logger.getGlobal().log(Level.INFO, e1.getMessage(), e1);
+			messageStatus(Severity.Information, e1.getMessage());
+    		return false;
 		}
     	return true;
     }
@@ -768,7 +807,6 @@ public class VisItSwtConnection implements VisItInitializedCallback,
      * 
      */
     public void close() {
-
         client.disconnect();
         closePreviousConnection();
     }
@@ -793,7 +831,26 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         for (int i = 0; i < imageList.size(); ++i) {
 
             JsonObject obj = imageList.get(i).getAsJsonObject();
-
+            String data = "";
+            
+            //*** BEG: deal with -1 (any window update) ***/
+            
+            List<VisItConnectionStruct> allStructs = windowCallbacks.get(-1);
+            byte[] output = null;
+            
+            if(allStructs != null && allStructs.size() > 0) {
+            	data = subject.getAttr(obj, "data").getAsString();
+            
+            	String base64img = data;
+                output = DatatypeConverter.parseBase64Binary(base64img);
+                for (int j = 0; j < allStructs.size(); ++j) {
+                	allStructs.get(j).callback.update(VISIT_CONNECTION_TYPE.IMAGE,
+                            output);
+                }            
+            }
+            
+            //*** END: deal with -1 (any window update) ***/
+            
             int windowId = subject.getAttr(obj, "windowId").getAsInt();
 
             if (!windowCallbacks.containsKey(windowId)) {
@@ -802,10 +859,14 @@ public class VisItSwtConnection implements VisItInitializedCallback,
 
             List<VisItConnectionStruct> structs = windowCallbacks.get(windowId);
 
-            String data = subject.getAttr(obj, "data").getAsString();
-
+            if(data.length() == 0) {
+            	data = subject.getAttr(obj, "data").getAsString();
+            }
+            
             String base64img = data;
-            byte[] output = DatatypeConverter.parseBase64Binary(base64img);
+            if(output == null) {
+            	output = DatatypeConverter.parseBase64Binary(base64img);
+            }
 
             // / check to see if image format..
             for (int j = 0; j < structs.size(); ++j) {
@@ -819,23 +880,6 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         return true;
     }
     
-	
-    private boolean updateMessageAttributes(AttributeSubject subject) {
-    	
-    	
-    	int sev = subject.get("severity").getAsInt();
-    	String message = subject.get("text").getAsString();
-    	
-    	VisItMessageSeverity severity = VisItMessageSeverity.values()[sev];
-    	
-    	Logger.getGlobal().log(Level.INFO, "messages: " + severity + " " + message);
-    	
-    	if(vmscb != null) {
-    		vmscb.message(severity, message);
-    	}
-    	return true;
-    }
-    
     @Override
     public boolean update(AttributeSubject subject) {
 
@@ -844,11 +888,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         if ("ViewerClientInformation".equals(typename)) {
             return updateViewerClientInformation(subject);
         }
-        
-        if ("MessageAttributes".equals(typename)) {
-            return updateMessageAttributes(subject);
-        }
-        
+
         return false;
     }
 
@@ -878,7 +918,6 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         	return password;
         }
 
-        @SuppressWarnings("unused")
         public void run() {
             try {
             	
@@ -901,17 +940,20 @@ public class VisItSwtConnection implements VisItInitializedCallback,
                     throw new IOException(
                             "Failed initial read from VisIt process...");
                 }
-                Logger.getGlobal().info(">>>> " + line);
+                //Logger.getGlobal().info(">> " + line);
+                messageStatus(Severity.Information, ">> " + line);
                 while (true) {
                     line = input.readLine();
                     
                     //System.out.println(">>>" + line);
-                    Logger.getGlobal().info(">> " + line);
+                    //Logger.getGlobal().info(">> " + line);
+                    messageStatus(Severity.Information, ">> " + line);
 
                     if (line == null) {
                     	if(hasVisItConnected) {
-                            Logger.getGlobal().info("Ending communication with VisIt...");
-                            break;
+                            //Logger.getGlobal().info("Ending communication with VisIt...");
+                            messageStatus(Severity.Warning, "Ending communication with VisIt...");
+                    		break;
                     	} else {
 	                        throw new IOException(
 	                                "VisIt Process has ended...");
@@ -939,8 +981,9 @@ public class VisItSwtConnection implements VisItInitializedCallback,
                 }
 
             } catch (Exception e) {
-                Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
-                hasVisItConnected = false;
+                //Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
+                messageStatus(Severity.Error, e.getMessage());
+            	hasVisItConnected = false;
                 done.release();
             }
         }

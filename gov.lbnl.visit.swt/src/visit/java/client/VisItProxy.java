@@ -14,7 +14,6 @@ import com.jcraft.jsch.Session;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.StreamCorruptedException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.ConnectException;
 import java.net.ServerSocket;
@@ -289,12 +288,12 @@ public class VisItProxy {
             /** ! block until all data is in */
             sem.acquire();
 
+            methods = new ViewerMethods(state, visitRPC);
+
             if (callback != null) {
                 callback.initialized();
             }
             
-            methods = new ViewerMethods(state, visitRPC);
-
             //state has synched at this point..
             
         } catch (Exception e) {

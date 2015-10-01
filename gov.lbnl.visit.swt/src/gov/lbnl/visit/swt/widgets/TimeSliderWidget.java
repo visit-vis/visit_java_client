@@ -7,23 +7,15 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.core.runtime.FileLocator;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.layout.GridData;
-import org.eclipse.swt.layout.GridLayout;
+
 import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Text;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.FrameworkUtil;
+
 
 public class TimeSliderWidget extends Composite {
 
@@ -44,9 +36,9 @@ public class TimeSliderWidget extends Composite {
      * @param style
      *            The style of widget to construct.
      */
-    public TimeSliderWidget(Composite parent, int style) {
-        this(parent, style, null);
-    }
+//    public TimeSliderWidget(Composite parent, int style) {
+//        this(parent, style, null);
+//    }
 
     /**
      * 
@@ -63,18 +55,22 @@ public class TimeSliderWidget extends Composite {
         connection = conn;
 
         actions = new ArrayList<IAction>();
+        setVisItSwtConnection(conn);
         
-        ts = new TimeSlider();
         setupUI();
     }
 
     public void setVisItSwtConnection(VisItSwtConnection conn) {
         connection = conn;
-
+        
         // Enable/disable all of the actions.
         boolean actionsEnabled = connection != null;
         for (IAction action : actions) {
             action.setEnabled(actionsEnabled);
+        }
+        
+        if(actionsEnabled) {
+        	ts = new TimeSlider(conn.getViewerMethods());
         }
     }
 

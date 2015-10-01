@@ -5,11 +5,8 @@ import gov.lbnl.visit.swt.VisItSwtConnection.VisualizationUpdateCallback;
 
 import java.io.ByteArrayInputStream;
 import java.net.ConnectException;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.swt.SWT;
@@ -18,6 +15,10 @@ import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.FocusEvent;
 import org.eclipse.swt.events.FocusListener;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.MouseListener;
+import org.eclipse.swt.events.MouseMoveListener;
+import org.eclipse.swt.events.MouseWheelListener;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.graphics.Point;
@@ -28,12 +29,6 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-
-import visit.java.client.AttributeSubject;
-import visit.java.client.AttributeSubject.AttributeSubjectCallback;
-import visit.java.client.FileInfo;
 import visit.java.client.ViewerMethods;
 import visit.java.client.ViewerState;
 
@@ -44,13 +39,7 @@ import visit.java.client.ViewerState;
  * @authors hkq, tnp
  */
 public class VisItSwtWidget extends Canvas implements Listener,
-        AttributeSubjectCallback, VisualizationUpdateCallback {
-
-    private static final String AVTDATABASEMETADATA = "avtDatabaseMetaData";
-    /**
-     * The database metadata.
-     */
-    private FileInfo openDatabaseInfo;
+		VisualizationUpdateCallback {
 
     /**
      * The composite to contain the canvas.
@@ -78,16 +67,6 @@ public class VisItSwtWidget extends Canvas implements Listener,
     private boolean initialized = false;
 
     /**
-     * files
-     */
-    List<String> files;
-
-    /**
-     * dirs
-     */
-    List<String> dirs;
-
-    /**
      * 
      */
     boolean mousePressed = false;
@@ -96,7 +75,12 @@ public class VisItSwtWidget extends Canvas implements Listener,
      * 
      */
     int startx, starty, sizex, sizey;
-
+    
+    /**
+     * Mouse manager...
+     */
+     MouseManager mouseManager; //optional manager
+     
     /**
      * The constructor
      * 
@@ -106,14 +90,14 @@ public class VisItSwtWidget extends Canvas implements Listener,
      *            The SWT constant style to be applied to the Canvas.
      */
     public VisItSwtWidget(Composite visComp, int x) {
-
-        // Call Canvas' constructor
+    	
+    	// Call Canvas' constructor
         super(visComp, x);
 
+        mouseManager = null;
+        
         // Get the Shell of the parent Composite
         shell = visComp.getShell();
-        files = new ArrayList<String>();
-        dirs = new ArrayList<String>();
 
         // Initialize the default image
         image = shell.getDisplay().getSystemImage(SWT.ICON_WORKING);
@@ -135,6 +119,10 @@ public class VisItSwtWidget extends Canvas implements Listener,
         });
     }
 
+    public void useDefaultMouseManager() {
+    	mouseManager = new MouseManager(this);
+    }
+    
     public void activate() {
         getViewerMethods().setActiveWindow(visitWindowId);
 
@@ -193,7 +181,7 @@ public class VisItSwtWidget extends Canvas implements Listener,
 
         visitConnection.registerVisualization(VISIT_CONNECTION_TYPE.IMAGE,
                 visitWindowId, this);
-        visitConnection.registerCallback(AVTDATABASEMETADATA, this);
+        
         initialized = true;
 
         getViewerMethods().resizeWindow(visitWindowId, windowWidth,
@@ -213,10 +201,6 @@ public class VisItSwtWidget extends Canvas implements Listener,
             public void widgetDisposed(DisposeEvent e) {
                 visitConnection.unregisterVisualization(visitWindowId,
                         VisItSwtWidget.this);
-
-                visitConnection.unregisterCallback(AVTDATABASEMETADATA,
-                        VisItSwtWidget.this);
-
             }
         });
     }
@@ -243,66 +227,10 @@ public class VisItSwtWidget extends Canvas implements Listener,
     public void handleEvent(Event e) {
 
         GC gc = e.gc;
-        gc.drawImage(image, 0, 0);
-    }
-
-    /**
-     * 
-     * @param arg0
-     */
-    private void updateDatabaseMetaData(AttributeSubject arg0) {
-
-        FileInfo fi = new FileInfo();
-
-        String filename = arg0.get("databaseName").getAsString();
-        String filetype = arg0.get("fileFormat").getAsString();
-        String description = arg0.get("databaseComment").getAsString();
-
-        Map<String, List<String>> outputArray = new HashMap<String, List<String>>();
-
-        String[] vartypes = new String[] { "meshes", "scalars", "vectors",
-                "materials" };
-
-        for (int i = 0; i < vartypes.length; ++i) {
-            List<String> data = new ArrayList<String>();
-
-            JsonArray array = arg0.get(vartypes[i]).getAsJsonArray();
-
-            for (int j = 0; j < array.size(); ++j) {
-
-                JsonObject obj = array.get(j).getAsJsonObject();
-                String name = arg0.getAttr(obj, "name").getAsString();
-                data.add(name);
-            }
-
-            outputArray.put(vartypes[i], data);
+        if(image.isDisposed()) {
+        } else {
+        	gc.drawImage(image, 0, 0);
         }
-
-        fi.setFileName(filename);
-        fi.setFileType(filetype);
-        fi.setFileDescription(description);
-
-        fi.setMeshes(outputArray.get("meshes"));
-        fi.setScalars(outputArray.get("scalars"));
-        fi.setVectors(outputArray.get("vectors"));
-        fi.setMaterials(outputArray.get("materials"));
-
-        openDatabaseInfo = fi;
-    }
-
-    /**
-     * 
-     */
-    @Override
-    public synchronized boolean update(AttributeSubject arg0) {
-        String typename = arg0.getTypename();
-
-        if (AVTDATABASEMETADATA.equals(typename)) {
-            updateDatabaseMetaData(arg0);
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -319,14 +247,6 @@ public class VisItSwtWidget extends Canvas implements Listener,
      */
     public ViewerState getViewerState() {
         return visitConnection.getViewerState();
-    }
-
-    /**
-     * 
-     * @return
-     */
-    public FileInfo getFileInfo() {
-        return openDatabaseInfo;
     }
 
     /**
@@ -421,5 +341,70 @@ public class VisItSwtWidget extends Canvas implements Listener,
             	}
             }
         });
+    }
+    
+    class MouseManager {
+
+    	VisItSwtWidget widget;
+    	
+    	public MouseManager(VisItSwtWidget w) {
+    		widget = w;
+    		setup();
+    	}
+    	
+    	public void setup() {
+    		  
+    		widget.addMouseWheelListener(new MouseWheelListener() {
+    			@Override
+    			public void mouseScrolled(MouseEvent e) {
+    				VisItSwtWidget widget = (VisItSwtWidget)e.getSource();
+    				String direction = (e.count > 0) ? "in" : "out";
+    				widget.zoom(direction);
+    			}
+    		});
+
+    		widget.addMouseWheelListener(new MouseWheelListener() {
+    			@Override
+    			public void mouseScrolled(MouseEvent e) {
+    				VisItSwtWidget widget = (VisItSwtWidget)e.getSource();
+    				String direction = (e.count > 0) ? "in" : "out";
+    				widget.zoom(direction);
+    			}
+    		});
+
+    		// Use mouse click to move the plot
+    		widget.addMouseMoveListener(new MouseMoveListener() {
+    			@Override
+    			public void mouseMove(MouseEvent e) {
+    				VisItSwtWidget widget = (VisItSwtWidget)e.getSource();
+    				widget.mouseMove(e.x, e.y,
+    						(e.stateMask & SWT.CTRL) != 0, 
+    						(e.stateMask & SWT.ALT) != 0);
+    			}
+    		});
+
+    		// Update the mouse in the widget based on its movements
+    		widget.addMouseListener(new MouseListener() {
+    			@Override
+    			public void mouseUp(MouseEvent e) {
+    				VisItSwtWidget widget = (VisItSwtWidget)e.getSource();
+    				widget.mouseStop(e.x, e.y,
+    						(e.stateMask & SWT.CTRL) != 0, 
+    						(e.stateMask & SWT.ALT) != 0);
+    			}
+
+    			@Override
+    			public void mouseDown(MouseEvent e) {
+    				VisItSwtWidget widget = (VisItSwtWidget)e.getSource();
+    				widget.mouseStart(e.x, e.y,
+    						(e.stateMask & SWT.CTRL) != 0, 
+    						(e.stateMask & SWT.ALT) != 0);
+    			}
+
+    			@Override
+    			public void mouseDoubleClick(MouseEvent e) {
+    			}
+    		});
+    	}
     }
 }

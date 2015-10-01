@@ -9,6 +9,6 @@ Require-Bundle: org.eclipse.swt,
  org.eclipse.core.runtime
 Export-Package: gov.lbnl.visit.swt,
  gov.lbnl.visit.swt.widgets,
- visit.java.client
-Import-Package: com.google.gson,
- com.jcraft.jsch
+ visit.java.client,
+ visit.java.client.components
+Import-Package: com.jcraft.jsch

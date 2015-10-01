@@ -16,10 +16,10 @@ public class VisItWidget extends Composite {
 	 * @param style
 	 *            The style of widget to construct.
 	 */
-	public VisItWidget(Composite parent, int style) {
-	    this(parent, style, null);
-	}
-	
+//	public VisItWidget(Composite parent, int style) {
+//	    this(parent, style, null);
+//	}
+//	
 	/**
 	 * 
 	 * @param parent
@@ -35,8 +35,8 @@ public class VisItWidget extends Composite {
 	    connection = conn;
 	}
 	
-	public void setVisItSwtConnection(VisItSwtConnection conn) {
-	    connection = conn;
-	}
+//	public void setVisItSwtConnection(VisItSwtConnection conn) {
+//	    connection = conn;
+//	}
 	
 }

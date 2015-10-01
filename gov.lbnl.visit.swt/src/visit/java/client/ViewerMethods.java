@@ -7,8 +7,11 @@ import com.google.gson.JsonPrimitive;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.*;
 
 import visit.java.client.AttributeSubject.AttributeSubjectCallback;
@@ -41,6 +44,7 @@ public class ViewerMethods {
      * 
      */
     Map<String, Integer> visitRPC;
+    Map<Integer, String> reverseVisitRPC;
 
     /**
      * 
@@ -60,7 +64,7 @@ public class ViewerMethods {
     /**
      * 
      */
-    FileInfo databaseInfo;
+    //FileInfo databaseInfo;
 
     /**
      * The constructor
@@ -72,6 +76,14 @@ public class ViewerMethods {
     public ViewerMethods(ViewerState state, Map<String, Integer> rpc) {
         mState = state;
         visitRPC = rpc;
+        reverseVisitRPC = new HashMap<Integer, String>();
+        
+        Set<Entry<String, Integer>> entrySet = visitRPC.entrySet();
+        Iterator<Entry<String, Integer>> itr = entrySet.iterator();
+        while(itr.hasNext()) {
+        	Entry<String, Integer> e = itr.next();
+        	reverseVisitRPC.put(e.getValue(), e.getKey());
+        }
 
         syncAtts = mState.getAttributeSubjectFromTypename("SyncAttributes");
 
@@ -88,68 +100,68 @@ public class ViewerMethods {
         });
         
         
-        AttributeSubject databaseMetaData = mState.getAttributeSubjectFromTypename("avtDatabaseMetaData");
-        
-        databaseMetaData.addCallback(new AttributeSubjectCallback() {
-			
-			@Override
-			public boolean update(AttributeSubject arg0) {
-		        FileInfo fi = new FileInfo();
-
-		        String filename = arg0.get("databaseName").getAsString();
-		        String filetype = arg0.get("fileFormat").getAsString();
-		        String description = arg0.get("databaseComment").getAsString();
-
-		        Map<String, List<String>> outputArray = new HashMap<String, List<String>>();
-
-		        String[] vartypes = new String[] { "meshes", "scalars", "vectors",
-		                "materials" };
-
-		        for (int i = 0; i < vartypes.length; ++i) {
-		            List<String> data = new ArrayList<String>();
-
-		            JsonArray array = arg0.get(vartypes[i]).getAsJsonArray();
-
-		            for (int j = 0; j < array.size(); ++j) {
-
-		                JsonObject obj = array.get(j).getAsJsonObject();
-		                String name = arg0.getAttr(obj, "name").getAsString();
-		                data.add(name);
-		            }
-
-		            outputArray.put(vartypes[i], data);
-		        }
-
-		        fi.setFileName(filename);
-		        fi.setFileType(filetype);
-		        fi.setFileDescription(description);
-
-		        fi.setMeshes(outputArray.get("meshes"));
-		        fi.setScalars(outputArray.get("scalars"));
-		        fi.setVectors(outputArray.get("vectors"));
-		        fi.setMaterials(outputArray.get("materials"));
-
-		        ///TODO: check if cyclesAreAccurate & timesAreAccurate fields..
-	            JsonArray timesArray = arg0.get("times").getAsJsonArray();
-		        ArrayList<Float> times = new ArrayList<Float>();
-	            for(int i = 0; i < timesArray.size(); ++i) {
-	            	times.add(timesArray.get(i).getAsFloat());
-	            }
-	            
-	            JsonArray cycleArray = arg0.get("cycles").getAsJsonArray();
-	            ArrayList<Integer> cycles = new ArrayList<Integer>();
-	            for(int i = 0; i < cycleArray.size(); ++i) {
-	            	cycles.add(cycleArray.get(i).getAsInt());
-	            }
-	            
-	            fi.setTimes(times);
-	            fi.setCycles(cycles);
-	            
-	            databaseInfo = fi;
-		        
-				return true;
-			}
-		});
+//        AttributeSubject databaseMetaData = mState.getAttributeSubjectFromTypename("avtDatabaseMetaData");
+//        
+//        databaseMetaData.addCallback(new AttributeSubjectCallback() {
+//			
+//			@Override
+//			public boolean update(AttributeSubject arg0) {
+//		        FileInfo fi = new FileInfo();
+//
+//		        String filename = arg0.get("databaseName").getAsString();
+//		        String filetype = arg0.get("fileFormat").getAsString();
+//		        String description = arg0.get("databaseComment").getAsString();
+//
+//		        Map<String, List<String>> outputArray = new HashMap<String, List<String>>();
+//
+//		        String[] vartypes = new String[] { "meshes", "scalars", "vectors",
+//		                "materials" };
+//
+//		        for (int i = 0; i < vartypes.length; ++i) {
+//		            List<String> data = new ArrayList<String>();
+//
+//		            JsonArray array = arg0.get(vartypes[i]).getAsJsonArray();
+//
+//		            for (int j = 0; j < array.size(); ++j) {
+//
+//		                JsonObject obj = array.get(j).getAsJsonObject();
+//		                String name = arg0.getAttr(obj, "name").getAsString();
+//		                data.add(name);
+//		            }
+//
+//		            outputArray.put(vartypes[i], data);
+//		        }
+//
+//		        fi.setFileName(filename);
+//		        fi.setFileType(filetype);
+//		        fi.setFileDescription(description);
+//
+//		        fi.setMeshes(outputArray.get("meshes"));
+//		        fi.setScalars(outputArray.get("scalars"));
+//		        fi.setVectors(outputArray.get("vectors"));
+//		        fi.setMaterials(outputArray.get("materials"));
+//
+//		        ///TODO: check if cyclesAreAccurate & timesAreAccurate fields..
+//	            JsonArray timesArray = arg0.get("times").getAsJsonArray();
+//		        ArrayList<Float> times = new ArrayList<Float>();
+//	            for(int i = 0; i < timesArray.size(); ++i) {
+//	            	times.add(timesArray.get(i).getAsFloat());
+//	            }
+//	            
+//	            JsonArray cycleArray = arg0.get("cycles").getAsJsonArray();
+//	            ArrayList<Integer> cycles = new ArrayList<Integer>();
+//	            for(int i = 0; i < cycleArray.size(); ++i) {
+//	            	cycles.add(cycleArray.get(i).getAsInt());
+//	            }
+//	            
+//	            fi.setTimes(times);
+//	            fi.setCycles(cycles);
+//	            
+//	            databaseInfo = fi;
+//		        
+//				return true;
+//			}
+//		});
 
         mutex.release();
     }
@@ -158,13 +170,35 @@ public class ViewerMethods {
         return mState;
     }
     
+    public Map<String, Integer> getVisItRPC() {
+    	return visitRPC;
+    }
+    
+    public Map<Integer, String> getReverseVisItRPC() {
+    	return reverseVisitRPC;
+    }
+    
     /**
      * 
      * @return the databaseInfo
      */
-    public FileInfo getDatabaseInfo() {
-    	return databaseInfo;
-    }
+//    public FileInfo getDatabaseInfo() {
+//    	FileInfo fi = new FileInfo();
+//    	
+//    	fi.setFileName(databaseInfo.getFileName());
+//        fi.setFileType(databaseInfo.getFileType());
+//        fi.setFileDescription(databaseInfo.getFileDescription());
+//
+//        fi.getMeshes().addAll(databaseInfo.getMeshes());
+//        fi.getScalars().addAll(databaseInfo.getScalars());
+//        fi.getVectors().addAll(databaseInfo.getVectors());
+//        fi.getMaterials().addAll(databaseInfo.getMaterials());
+//        
+//        fi.getTimes().addAll(databaseInfo.getTimes());
+//        fi.getCycles().addAll(databaseInfo.getCycles());
+//                
+//    	return fi;
+//    }
 
     /**
      * Method to invert the color of the background of the viewer
@@ -379,6 +413,81 @@ public class ViewerMethods {
         synchronize();
     }
 
+    /// this can't be synchronized 
+    public String getPlotName(int plotId) {
+    	
+    	JsonArray names = mState.get(14, "name").getAsJsonArray();
+    	JsonArray types = mState.get(14, "type").getAsJsonArray();
+    	JsonArray enabled = mState.get(14, "enabled").getAsJsonArray();
+
+    	List<String> mapper = new ArrayList<String>();
+
+    	for (int i = 0; i < names.size(); ++i) {
+    		if (enabled.get(i).getAsInt() == 1
+    				&& "plot".equals(types.get(i).getAsString())) {
+    			mapper.add(names.get(i).getAsString());
+    		}
+    	}
+
+    	java.util.Collections.sort(mapper);
+    	return mapper.get(plotId);
+    }
+
+    public String getOperatorName(int plotId) {
+    	JsonArray names = mState.get(14, "name").getAsJsonArray();
+    	JsonArray types = mState.get(14, "type").getAsJsonArray();
+    	JsonArray enabled = mState.get(14, "enabled").getAsJsonArray();
+
+    	List<String> mapper = new ArrayList<String>();
+
+    	for (int i = 0; i < names.size(); ++i) {
+    		if (enabled.get(i).getAsInt() == 1
+    				&& "operator".equals(types.get(i).getAsString())) {
+    			mapper.add(names.get(i).getAsString());
+    		}
+    	}
+
+    	java.util.Collections.sort(mapper);
+    	return mapper.get(plotId);
+    }
+    
+    public List<String> getPlotList() {
+        JsonArray names = mState.get(14, "name").getAsJsonArray();
+        JsonArray types = mState.get(14, "type").getAsJsonArray();
+        JsonArray enabled = mState.get(14, "enabled").getAsJsonArray();
+
+        List<String> mapper = new ArrayList<String>();
+
+        for (int i = 0; i < names.size(); ++i) {
+            if (enabled.get(i).getAsInt() == 1
+                    && "plot".equals(types.get(i).getAsString())) {
+                mapper.add(names.get(i).getAsString());
+            }
+        }
+
+        java.util.Collections.sort(mapper);
+        return mapper;
+    }
+
+    public List<String> getOperatorList() {
+        JsonArray names = mState.get(14, "name").getAsJsonArray();
+        JsonArray types = mState.get(14, "type").getAsJsonArray();
+        JsonArray enabled = mState.get(14, "enabled").getAsJsonArray();
+
+        List<String> mapper = new ArrayList<String>();
+
+        for (int i = 0; i < names.size(); ++i) {
+            if (enabled.get(i).getAsInt() == 1
+                    && "operator".equals(types.get(i).getAsString())) {
+                mapper.add(names.get(i).getAsString());
+            }
+        }
+
+        java.util.Collections.sort(mapper);
+        return mapper;
+    }
+
+    
     /**
      * @param plot_type
      * @param name

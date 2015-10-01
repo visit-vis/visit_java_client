@@ -354,7 +354,7 @@ public class AttributeSubject {
 
         List<AttributeSubject> list = new ArrayList<AttributeSubject>();
         
-        if (!obj.isJsonObject() && !obj.getAsJsonObject().has("api")) {
+        if (!obj.isJsonObject() || !obj.getAsJsonObject().has("api")) {
             return list;
         }
 

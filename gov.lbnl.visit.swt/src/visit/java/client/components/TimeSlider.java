@@ -1,32 +1,30 @@
 package visit.java.client.components;
 
+import visit.java.client.ViewerMethods;
+
 public class TimeSlider extends VisItComponent {
 
-	public TimeSlider() {
+	public TimeSlider(ViewerMethods m) {
+		super(m);
 	}
 
 	public void play() {
-		if (methods == null) return; 
 		methods.animationPlay();
 	}
 	
 	public void previousState() {
-		if (methods == null) return; 
 		methods.animationPreviousState();
 	}
 	
 	public void reversePlay() {
-        if (methods == null) return;
         methods.animationReversePlay();
 	}
 	
 	public void stop() {
-		if(methods == null) return;
-        methods.animationStop();
+		methods.animationStop();
 	}
 	
 	public void nextState() {
-		if (methods == null) return; 
 		methods.animationNextState();
 	}
 }
