@@ -170,19 +170,24 @@ public class AttributeSubject {
      * @param key
      * @param value
      */
-    public void set(String key, JsonElement value) {
+    public boolean set(String key, JsonElement value) {
 
+    	if(getApi().get(key) == null) {
+    		return false;
+    	}
+    	
         int index = getApi().get(key).getAsJsonObject().get(ATTRID).getAsInt();
         JsonElement p = getData().get(index);
 
         // Check if they are the same type..
         if (!typeEquals(p, value)) {
-            return;
+            return false;
         }
 
         // Add to mod list..
         update.insert(index, value, data.getAsJsonArray("metadata").get(index));
 
+        return true;
     }
 
     /**
@@ -192,6 +197,10 @@ public class AttributeSubject {
      */
     public JsonElement get(String key) {
 
+    	if(getApi().get(key) == null) {
+    		return null;
+    	}
+    	
         int index = getApi().get(key).getAsJsonObject().get(ATTRID).getAsInt();
         String type = getApi().get(key).getAsJsonObject().get("type")
                 .getAsString();
