@@ -16,51 +16,14 @@ public class AdvancedWidgets extends VisItWidget {
 	
 	public AdvancedWidgets(Composite parent, int style, VisItSwtConnection conn) {
 	    super(parent, style, conn);
-	}
-
-	private void addPythonConsoleWidget() {
-		TabItem tabItem = new TabItem(tabFolder, SWT.NULL);
-		tabItem.setText("Python Console Widget");
-	
-		PythonConsoleWidget widget = new PythonConsoleWidget(tabFolder, 
-				SWT.BORDER, 
-				connection);
-		widget.setLayout(new GridLayout(1, true));
-		widget.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		tabItem.setControl(widget);
+	    
+	    tabFolder = new TabFolder(this, SWT.BORDER | SWT.H_SCROLL);
+		tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		
+		if(conn != null) {
+			showOptions();
+		}
 	}
-	
-	private void addColorMapWidget() {
-		TabItem tabItem = new TabItem(tabFolder, SWT.NULL);
-		tabItem.setText("ColorMap Widget");
-	
-		ColorMapWidget widget = new ColorMapWidget(tabFolder, SWT.BORDER, connection);
-		widget.setLayout(new GridLayout(1, true));
-		widget.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		tabItem.setControl(widget);
-	}
-	
-	private void addAnnotationWidget() {
-		TabItem tabItem = new TabItem(tabFolder, SWT.NULL);
-		tabItem.setText("Annotation Widget");
-	
-		AnnotationWidget widget = new AnnotationWidget(tabFolder, SWT.BORDER, connection);
-		widget.setLayout(new GridLayout(1, true));
-		widget.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		tabItem.setControl(widget);
-	}
-	
-	private void addMessageWidget() {
-		TabItem tabItem = new TabItem(tabFolder, SWT.NULL);
-		tabItem.setText("Message Attributes");
-	
-		MessageAttributesWidget widget = new MessageAttributesWidget(tabFolder, SWT.BORDER, connection);
-		widget.setLayout(new GridLayout(1, true));
-		widget.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-		tabItem.setControl(widget);
-	}
-
 	private void addTimeSliderWidget() {
 		TabItem tabItem = new TabItem(tabFolder, SWT.NULL);
 		tabItem.setText("TimeSlider Widget");
@@ -71,14 +34,40 @@ public class AdvancedWidgets extends VisItWidget {
 		tabItem.setControl(widget);
 	}
 	
-	public void showOptions(Composite parent) {
-		tabFolder = new TabFolder(parent, SWT.BORDER);
-		tabFolder.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-
-		addPythonConsoleWidget();
-		addColorMapWidget();
-		addAnnotationWidget();
-		addMessageWidget();
+	private void addWidget(String title, VisItWidget widget) {
+		TabItem tabItem = new TabItem(tabFolder, SWT.NULL);
+		tabItem.setText(title);
+	
+		widget.setLayout(new GridLayout(1, true));
+		widget.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		tabItem.setControl(widget);
+	}
+	
+	public void setVisItSwtConnection(VisItSwtConnection c) {
+		connection = c;
+		
+		if(connection != null) {
+			TabItem[] items = tabFolder.getItems();
+			if(items != null) {
+				for(int i = 0; i < items.length; ++i) {
+					items[i].getControl().dispose();
+					items[i].dispose();
+				}
+			}
+		}
+		///re-add with new connection..
+		showOptions();
+	}
+	
+	private void showOptions() {
+		addWidget("Python Console", new PythonConsoleWidget(tabFolder, SWT.BORDER, connection));
+		addWidget("ColorMaps", new ColorMapWidget(tabFolder, SWT.BORDER, connection));
+		addWidget("Annotations", new AnnotationWidget(tabFolder, SWT.BORDER, connection));
+		addWidget("Expressions", new ExpressionWidget(tabFolder, SWT.BORDER, connection));
+		addWidget("Save Window", new SaveWindowWidget(tabFolder, SWT.BORDER, connection));
+		addWidget("Session", new SessionWidget(tabFolder, SWT.BORDER, connection));
+		addWidget("Message Attributes", new MessageAttributesWidget(tabFolder, SWT.BORDER, connection));
+		//addWidget("TimeSlider", new TimeSliderWidget(tabFolder, SWT.BORDER, connection));
 		addTimeSliderWidget();
 	}
 }

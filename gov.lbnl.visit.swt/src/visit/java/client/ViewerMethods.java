@@ -129,6 +129,31 @@ public class ViewerMethods {
         synchronize();
     }
     
+    public void ImportEntireState(String filename, boolean inVisItDir) {
+    	mState.set(0, RPCTYPE, visitRPC.get("ImportEntireStateRPC"));
+    	mState.set(0, "variable", filename);
+    	mState.set(0, "boolFlag", inVisItDir);
+    	mState.notify(0);
+        synchronize();
+    }
+
+    public void importEntireStateWithDifferentSources(String filename, boolean inVisItDir, List<String> sources) {
+    	mState.set(0, RPCTYPE, visitRPC.get("ImportEntireStateWithDifferentSourcesRPC"));
+    	mState.set(0, "variable", filename);
+    	mState.set(0, "boolFlag", inVisItDir);
+    	mState.set(0, "programOptions", sources);
+    	
+    	mState.notify(0);
+        synchronize();
+    }
+    
+    public void exportEntireState(String filename) {
+    	mState.set(0, RPCTYPE, visitRPC.get("ExportEntireStateRPC"));
+    	mState.set(0, "variable", filename);
+    	mState.notify(0);
+        synchronize();
+    }
+
     /**
      * Method to add a window to the viewer
      */
@@ -332,6 +357,24 @@ public class ViewerMethods {
 
         synchronize();
     }
+    
+    public synchronized void setPlotOptions(String plotName) {
+    	int id = getEnabledID("plot", plotName);
+        mState.set(0, RPCTYPE, visitRPC.get("SetPlotOptionsRPC"));
+        mState.set(0, "plotType", id);
+        mState.notify(0);
+        synchronize();
+    }
+    
+    public synchronized void setOperatorOptions(String opName) {
+    	int id = getEnabledID("operator", opName);
+    	System.out.println(id);
+        mState.set(0, RPCTYPE, visitRPC.get("SetOperatorOptionsRPC"));
+        mState.set(0, "operatorType", id);
+        mState.notify(0);
+        synchronize();
+    }
+
 
     /// this can't be synchronized 
     public String getPlotName(int plotId) {

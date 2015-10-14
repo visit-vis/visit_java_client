@@ -5,10 +5,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.swt.SWT;
-
+import org.eclipse.swt.events.DisposeEvent;
+import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -18,12 +18,10 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Text;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 
 import gov.lbnl.visit.swt.VisItSwtConnection;
-import visit.java.client.AttributeSubject;
 import visit.java.client.components.ColorMap;
+import visit.java.client.components.ColorMap.ColorMapCallback;
 
 public class ColorMapWidget extends VisItWidget {
 	private ColorMap colormap;
@@ -57,9 +55,7 @@ public class ColorMapWidget extends VisItWidget {
    }
    
    private void setupUI() {
-	   
-		
-		Composite group = new Composite(this, SWT.NONE);
+	   	Composite group = new Composite(this, SWT.NONE);
 		
 		group.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		group.setLayout(new GridLayout(1, true));
@@ -103,36 +99,22 @@ public class ColorMapWidget extends VisItWidget {
 				String text = c.getText();
 				String outputText = "";
 				
-				AttributeSubject subj = connection.getViewerState().getAttributeSubjectFromTypename("ColorTableAttributes");
-				List<String> names = subj.getAsStringVector("names");
+				List<Float> pcnts = new ArrayList<Float>();
+				List<ColorMap.Color> colors = new ArrayList<ColorMap.Color>();
 				
-				int index = -1;
-				for(int i = 0; i < names.size(); ++i) {
-					if(names.get(i).equals(text)) {
-						index = i;
-						break;
-					}
-				}
+				boolean res = colormap.getColorTable(text, pcnts, colors);
 				
-				if(index == -1) return;
 				
-				JsonArray array = subj.get("colorTables").getAsJsonArray();
-				AttributeSubject controlPointList = new AttributeSubject(array.get(index));
+				if(!res) return;
 				
-				JsonArray cparray = controlPointList.get("controlPoints").getAsJsonArray();
-				for(int i = 0; i < cparray.size(); ++i) {
-					JsonElement elem = cparray.get(i);
-					AttributeSubject color = new AttributeSubject(elem);
-					List<Integer> colors = color.getAsIntVector("colors");
-					double position = color.getAsFloat("position");
-					String tmp = "" + Float.toString((float)position) + ", " +
-							     colors.get(0) + ", " +
-							     colors.get(1) + ", " +
-							     colors.get(2) + ", " +
-							     colors.get(3);
+				for(int i = 0; i < pcnts.size(); ++i) {
+					String tmp = "" + pcnts.get(i) + ", " +
+							colors.get(i).r + ", " +
+							colors.get(i).g + ", " +
+							colors.get(i).b + ", " +
+							colors.get(i).a;
 					outputText += tmp + "\n";
 				}
-				
 				colorTable.setText(outputText);
 			}
 			
@@ -151,7 +133,7 @@ public class ColorMapWidget extends VisItWidget {
 				String[] rows = output.split("\n");
 				
 				List<Float> pcnts = new ArrayList<Float>();
-				List<Color> colors = new ArrayList<Color>();
+				List<ColorMap.Color> colors = new ArrayList<ColorMap.Color>();
  				for(int i = 0; i < rows.length; ++i) {
 					if(rows[i].trim().startsWith("//"))
 						continue;
@@ -171,7 +153,7 @@ public class ColorMapWidget extends VisItWidget {
 						int alpha = Integer.parseInt(comps[4].trim());
 						
 						pcnts.add(val);
-						colors.add(new Color(Display.getDefault(), red, green, blue, alpha));
+						colors.add(new ColorMap.Color(red, green, blue, alpha));
 					}catch(Exception ex) {
 						ex.printStackTrace();
 					}
@@ -182,6 +164,31 @@ public class ColorMapWidget extends VisItWidget {
 			
 			@Override
 			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
+		
+		colormap.register(new ColorMapCallback() {
+			
+			@Override
+			public void colors(List<String> colornames) {
+				final List<String> c = colornames;
+				Display.getDefault().asyncExec(new Runnable() {
+					
+					@Override
+					public void run() {
+						combo.removeAll();
+						combo.setItems(c.toArray(new String[c.size()]));
+					}
+				});
+				
+			}
+		});
+		
+		this.addDisposeListener(new DisposeListener() {
+			
+			@Override
+			public void widgetDisposed(DisposeEvent e) {
+				colormap.cleanup();
 			}
 		});
    }

@@ -116,4 +116,39 @@ public class PlotList extends VisItComponent {
 		methods.getViewerState()
 		.unregisterCallback("PlotList", attSubCallback);
 	}
+	
+	public boolean updatePlot(String plot, int plotIndex, String key, String value) {
+		
+		String p = plot + "Attributes";
+		
+		AttributeSubject subj = methods.getViewerState().getAttributeSubjectFromTypename(p);
+		if(subj == null) return false;
+		
+		subj.set(key, value);
+		
+		int index = methods.getViewerState().getIndexFromTypename(p);
+		methods.getViewerState().notify(index);
+		methods.synchronize();
+
+		methods.setPlotOptions(plot);
+
+		return true;
+	}
+	
+	public boolean updateOperator(String plot, int plotIndex, 
+								String operator, int opIndex, String key, String value) {
+		
+		String op = operator + "Attributes";
+		AttributeSubject subj = methods.getViewerState().getAttributeSubjectFromTypename(op);
+		if(subj == null) return false;
+		
+		subj.set(key, value);
+		
+		int index = methods.getViewerState().getIndexFromTypename(op);
+		methods.getViewerState().notify(index);
+		methods.synchronize();
+		
+		methods.setOperatorOptions(operator);
+		return true;
+	}
 }

@@ -5,6 +5,8 @@ import java.io.ByteArrayInputStream;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.graphics.GC;
@@ -22,6 +24,7 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.ScrollBar;
+import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
 
 import gov.lbnl.visit.swt.VisItSwtConnection;
@@ -57,7 +60,7 @@ public class AnnotationWidget extends VisItWidget {
 //	}
 	
 	Image image = null;
-	public void setupUI() {
+	private void setupUI() {
 
 		Composite mainGroup = new Composite(this, SWT.BORDER);
 		mainGroup.setLayout(new GridLayout(2, false));
@@ -65,31 +68,54 @@ public class AnnotationWidget extends VisItWidget {
 		
 		Composite group = new Composite(mainGroup, SWT.NONE);
 		group.setLayout(new GridLayout(1, true));
+		group.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
 
+		Composite posComp = new Composite(group, SWT.NONE);
+		posComp.setLayout(new RowLayout());
+		posComp.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		
+		new Label(posComp, SWT.BORDER).setText("X:");
+		final Spinner xspinner = new Spinner(posComp, SWT.NONE);
+		xspinner.setDigits(2);
+		xspinner.setMinimum(0);
+		xspinner.setMaximum(100);
+		
+		new Label(posComp, SWT.BORDER).setText("Y:");
+		final Spinner yspinner = new Spinner(posComp, SWT.NONE);
+		yspinner.setDigits(2);
+		yspinner.setMinimum(0);
+		yspinner.setMaximum(100);
+		
 		Composite sliderComp = new Composite(group, SWT.NONE);
 		sliderComp.setLayout(new RowLayout());
 		sliderComp.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		
-		new Label(sliderComp, SWT.BORDER).setText("(x,y)");
-		final Text xtext = new Text(sliderComp, SWT.NONE);
-		
-		new Label(sliderComp, SWT.BORDER).setText("*");
-		final Text ytext = new Text(sliderComp, SWT.NONE);
-		
+	
 		Button addSlider = new Button(sliderComp, SWT.PUSH);
+		addSlider.setText("Add Time Slider");
 		
-		addSlider.setText("Add Slider");
+
+		Composite addTextComp = new Composite(group, SWT.NONE);
+		addTextComp.setLayout(new GridLayout(2, true));
+		addTextComp.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
+		
+		final Text xLabel = new Text(addTextComp, SWT.NONE);
+
+		Button addText = new Button(addTextComp, SWT.PUSH);
+		addText.setText("Add 2D Text");
 		
 		addSlider.addSelectionListener(new SelectionListener() {
 			
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				try {
-					float x = Float.parseFloat(xtext.getText());
-					float y = Float.parseFloat(ytext.getText());
-					annotations.createTimeSlider(x, y);
-				} catch(Exception ex) {
-				}
+				int selection = xspinner.getSelection();
+				int digits = xspinner.getDigits();
+				float x  = (float) (selection / Math.pow(10, digits));
+
+				selection = yspinner.getSelection();
+				digits = yspinner.getDigits();
+				float y  = (float) (selection / Math.pow(10, digits));
+
+				annotations.createTimeSlider(x, y);
 			}
 				
 			
@@ -98,32 +124,19 @@ public class AnnotationWidget extends VisItWidget {
 			}
 		});
 
-		Composite addTextComp = new Composite(group, SWT.NONE);
-		addTextComp.setLayout(new RowLayout());
-		addTextComp.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, false));
-		
-		new Label(addTextComp, SWT.BORDER).setText("Text:");
-		final Text xLabel = new Text(addTextComp, SWT.NONE);
-		
-		new Label(addTextComp, SWT.BORDER).setText("(x,y)");
-		final Text xtextT = new Text(addTextComp, SWT.NONE);
-
-		new Label(addTextComp, SWT.BORDER).setText("*");
-		final Text ytextT = new Text(addTextComp, SWT.NONE);
-
-		Button addText = new Button(addTextComp, SWT.PUSH);
-		addText.setText("Add 2D Text");
-		
 		addText.addSelectionListener(new SelectionListener() {
 			
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				try {
-					float x = Float.parseFloat(xtextT.getText());
-					float y = Float.parseFloat(ytextT.getText());
+				int selection = xspinner.getSelection();
+				int digits = xspinner.getDigits();
+				float x  = (float) (selection / Math.pow(10, digits));
 
-					annotations.createText2D(xLabel.getText(), x, y);
-				} catch(Exception ex) {}
+				selection = yspinner.getSelection();
+				digits = yspinner.getDigits();
+				float y  = (float) (selection / Math.pow(10, digits));
+
+				annotations.createText2D(xLabel.getText(), x, y);
 			}
 			
 			@Override
@@ -132,13 +145,13 @@ public class AnnotationWidget extends VisItWidget {
 		});
 	
 		Button clearCanvas = new Button(group, SWT.PUSH);
-		clearCanvas.setText("Clear Canvas");
+		clearCanvas.setText("Clear Annotations");
 		
 		clearCanvas.addSelectionListener(new SelectionListener() {
 			
 			@Override
 			public void widgetSelected(SelectionEvent e) {
-				annotations.cleanupCanvas();
+				annotations.clearAll();
 			}
 			
 			@Override
@@ -153,78 +166,86 @@ public class AnnotationWidget extends VisItWidget {
 
 		canvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 				
-		final ScrollBar hBar = canvas.getHorizontalBar ();
-		hBar.addListener (SWT.Selection, new Listener () {
+//		final ScrollBar hBar = canvas.getHorizontalBar ();
+//		hBar.addListener (SWT.Selection, new Listener () {
+//			@Override
+//			public void handleEvent (Event e) {
+//				if(image == null) return;
+//				
+//				int hSelection = hBar.getSelection ();
+//				int destX = -hSelection - origin.x;
+//				Rectangle rect = image.getBounds ();
+//				canvas.scroll (destX, 0, 0, 0, rect.width, rect.height, false);
+//				origin.x = -hSelection;
+//			}
+//		});
+		
+//		final ScrollBar vBar = canvas.getVerticalBar ();
+//		vBar.addListener (SWT.Selection, new Listener () {
+//			@Override
+//			public void handleEvent (Event e) {
+//				if(image == null) return;
+//				int vSelection = vBar.getSelection ();
+//				int destY = -vSelection - origin.y;
+//				Rectangle rect = image.getBounds ();
+//				canvas.scroll (0, destY, 0, 0, rect.width, rect.height, false);
+//				origin.y = -vSelection;
+//			}
+//		});
+//		canvas.addListener (SWT.Resize,  new Listener () {
+//			@Override
+//			public void handleEvent (Event e) {
+//				if(image == null) return;
+//				
+//				Rectangle rect = image.getBounds ();
+//				Rectangle client = canvas.getClientArea ();
+//				hBar.setMaximum (rect.width);
+//				vBar.setMaximum (rect.height);
+//				hBar.setThumb (Math.min (rect.width, client.width));
+//				vBar.setThumb (Math.min (rect.height, client.height));
+//				int hPage = rect.width - client.width;
+//				int vPage = rect.height - client.height;
+//				int hSelection = hBar.getSelection ();
+//				int vSelection = vBar.getSelection ();
+//				if (hSelection >= hPage) {
+//					if (hPage <= 0) hSelection = 0;
+//					origin.x = -hSelection;
+//				}
+//				if (vSelection >= vPage) {
+//					if (vPage <= 0) vSelection = 0;
+//					origin.y = -vSelection;
+//				}
+//				canvas.redraw ();
+//			}
+//		});
+//		canvas.addListener (SWT.Paint, new Listener () {
+//			@Override
+//			public void handleEvent (Event e) {
+//				if(image == null) return;
+//				
+//				GC gc = e.gc;
+//				gc.drawImage (image, origin.x, origin.y);
+//				Rectangle rect = image.getBounds ();
+//				Rectangle client = canvas.getClientArea ();
+//				int marginWidth = client.width - rect.width;
+//				if (marginWidth > 0) {
+//					gc.fillRectangle (rect.width, 0, marginWidth, client.height);
+//				}
+//				int marginHeight = client.height - rect.height;
+//				if (marginHeight > 0) {
+//					gc.fillRectangle (0, rect.height, client.width, marginHeight);
+//				}
+//			}
+//		});
+
+		canvas.addPaintListener(new PaintListener() {
+			
 			@Override
-			public void handleEvent (Event e) {
-				if(image == null) return;
-				
-				int hSelection = hBar.getSelection ();
-				int destX = -hSelection - origin.x;
-				Rectangle rect = image.getBounds ();
-				canvas.scroll (destX, 0, 0, 0, rect.width, rect.height, false);
-				origin.x = -hSelection;
+			public void paintControl(PaintEvent e) {
+				e.gc.drawImage(image, 0, 0);
 			}
 		});
 		
-		final ScrollBar vBar = canvas.getVerticalBar ();
-		vBar.addListener (SWT.Selection, new Listener () {
-			@Override
-			public void handleEvent (Event e) {
-				if(image == null) return;
-				int vSelection = vBar.getSelection ();
-				int destY = -vSelection - origin.y;
-				Rectangle rect = image.getBounds ();
-				canvas.scroll (0, destY, 0, 0, rect.width, rect.height, false);
-				origin.y = -vSelection;
-			}
-		});
-		canvas.addListener (SWT.Resize,  new Listener () {
-			@Override
-			public void handleEvent (Event e) {
-				if(image == null) return;
-				
-				Rectangle rect = image.getBounds ();
-				Rectangle client = canvas.getClientArea ();
-				hBar.setMaximum (rect.width);
-				vBar.setMaximum (rect.height);
-				hBar.setThumb (Math.min (rect.width, client.width));
-				vBar.setThumb (Math.min (rect.height, client.height));
-				int hPage = rect.width - client.width;
-				int vPage = rect.height - client.height;
-				int hSelection = hBar.getSelection ();
-				int vSelection = vBar.getSelection ();
-				if (hSelection >= hPage) {
-					if (hPage <= 0) hSelection = 0;
-					origin.x = -hSelection;
-				}
-				if (vSelection >= vPage) {
-					if (vPage <= 0) vSelection = 0;
-					origin.y = -vSelection;
-				}
-				canvas.redraw ();
-			}
-		});
-		canvas.addListener (SWT.Paint, new Listener () {
-			@Override
-			public void handleEvent (Event e) {
-				if(image == null) return;
-				
-				GC gc = e.gc;
-				gc.drawImage (image, origin.x, origin.y);
-				Rectangle rect = image.getBounds ();
-				Rectangle client = canvas.getClientArea ();
-				int marginWidth = client.width - rect.width;
-				if (marginWidth > 0) {
-					gc.fillRectangle (rect.width, 0, marginWidth, client.height);
-				}
-				int marginHeight = client.height - rect.height;
-				if (marginHeight > 0) {
-					gc.fillRectangle (0, rect.height, client.width, marginHeight);
-				}
-			}
-		});
-
 		final VisualizationUpdateCallback cb = new VisualizationUpdateCallback() {
 			
 			@Override

@@ -6,17 +6,30 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.TreeEditor;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MenuAdapter;
 import org.eclipse.swt.events.MenuEvent;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.FillLayout;
+import org.eclipse.swt.layout.GridData;
+import org.eclipse.swt.layout.GridLayout;
+import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
@@ -45,6 +58,9 @@ public class PlotListWidget extends VisItWidget {
 	PlotList plotlist;
 	
 	DatabaseInformation databaseInfo;
+	
+	Composite editorComposite;
+	ArrayList<TreeItem> changes;
 	
 	ArrayList<PlotListWidgetCallback> cbList = new ArrayList<PlotListWidgetCallback>();
 	
@@ -78,17 +94,21 @@ public class PlotListWidget extends VisItWidget {
 						
 						for(int i = 0; i < plots.size(); ++i) {
 							TreeItem item = new TreeItem(tree, SWT.NONE);
-							item.setText(new String [] { plots.get(i).plotTypeName + "(" + plots.get(i).var + ")", "" });
+							item.setText(new String [] { plots.get(i).plotTypeName , 
+								    "(" + plots.get(i).var + ")" });
+							
 							item.setExpanded(true);
 							
 							TreeItem opt = new TreeItem(item, SWT.NONE);
-							opt.setText(new String[] { "options", "" } );
+							opt.setText(new String[] { "options", "-" } );
 							
 							///
 							String atsubj = plots.get(i).plotTypeName + "Attributes";
 							AttributeSubject subj = connection.getViewerState().getAttributeSubjectFromTypename(atsubj);
 							JsonObject obj = subj.getApi();
+							
 							Iterator< Entry<String,JsonElement> > itr = obj.entrySet().iterator();
+							
 							while(itr.hasNext()) {
 								Entry<String, JsonElement> e = itr.next();
 								TreeItem child = new TreeItem(opt, SWT.NONE);
@@ -102,7 +122,7 @@ public class PlotListWidget extends VisItWidget {
 							
 							for(int j = 0; j < plots.get(i).ops.size(); ++j) {
 								TreeItem opitem = new TreeItem(item, SWT.NONE);
-								opitem.setText(new String[] { plots.get(i).ops.get(j).name, "-"});
+								opitem.setText(new String[] { plots.get(i).ops.get(j).name, "(operator)"});
 								opitem.setExpanded(true);
 									
 								String opname = plots.get(i).ops.get(j).name + "Attributes";
@@ -210,17 +230,14 @@ public class PlotListWidget extends VisItWidget {
 		  }
 	  }
 	
-	public void setupUI() {
+	private void setupUI() {
 		Composite comp = new Composite(this, SWT.NONE);
-		comp.setLayout(new FillLayout(SWT.VERTICAL));
-		//setLayout(new GridLayout(1, true));
+		//comp.setLayout(new FillLayout(SWT.VERTICAL));
+		comp.setLayout(new GridLayout(1, true));
 		
 		vars = new Tree(comp, SWT.VIRTUAL | SWT.BORDER | 
 				SWT.H_SCROLL | SWT.V_SCROLL);
 		vars.setHeaderVisible(true);
-		//vars.setSize(300, SWT.DEFAULT);
-		//vars.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, true));
-
 		varsMenu = new Menu(vars);
 		vars.setMenu(varsMenu);
 		
@@ -284,6 +301,23 @@ public class PlotListWidget extends VisItWidget {
 		column2.setWidth(100);
 		column2.setResizable(true);
 		
+		editorComposite = new Composite(comp, SWT.BORDER);
+		editorComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+		
+		Button updateOps = new Button(comp, SWT.NONE);
+		updateOps.setText("Commit Changes...");
+		updateOps.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
+		
+		updateOps.addSelectionListener(new SelectionListener() {
+			
+			@Override
+			public void widgetSelected(SelectionEvent e) {
+			}
+			
+			@Override
+			public void widgetDefaultSelected(SelectionEvent e) {
+			}
+		});
 		plotsMenu = new Menu(tree);
 		
 		MenuItem deleteItem = new MenuItem(plotsMenu, SWT.NONE);
@@ -322,11 +356,11 @@ public class PlotListWidget extends VisItWidget {
 		final Menu colorMenu = new Menu(colorItem);
 		colorItem.setMenu(colorMenu);
 		
-		MenuItem changeVarItem = new MenuItem(plotsMenu, SWT.CASCADE);
-		changeVarItem.setText("Change Var...");
+//		MenuItem changeVarItem = new MenuItem(plotsMenu, SWT.CASCADE);
+//		changeVarItem.setText("Change Var...");
 
-		final Menu changeVarMenu = new Menu(changeVarItem);
-		changeVarItem.setMenu(changeVarMenu);
+//		final Menu changeVarMenu = new Menu(changeVarItem);
+//		changeVarItem.setMenu(changeVarMenu);
 		
 		MenuItem operatorItem = new MenuItem(plotsMenu, SWT.CASCADE);
 		operatorItem.setText("Operator...");
@@ -335,6 +369,26 @@ public class PlotListWidget extends VisItWidget {
 		operatorItem.setMenu(operatorVarMenu);
 		
 		tree.setMenu(plotsMenu);
+		
+//		final TreeItem [] lastItem = new TreeItem [1];
+//		final TreeItem editor = new TreeEditor (tree);
+//		final Color black = getDisplay().getSystemColor (SWT.COLOR_BLACK);
+		tree.addMouseListener(new MouseListener() {
+			
+			@Override
+			public void mouseUp(MouseEvent e) {
+			}
+			
+			@Override
+			public void mouseDown(MouseEvent e) {
+			}
+			
+			@Override
+			public void mouseDoubleClick(MouseEvent e) {
+				TreeItem item = tree.getItem(new Point(e.x, e.y));
+				editValue(item);
+			}
+		});
 		
 		colorMenu.addMenuListener(new MenuAdapter()
 	    {
@@ -380,20 +434,20 @@ public class PlotListWidget extends VisItWidget {
 	        }
 	    });
 		
-		changeVarMenu.addMenuListener(new MenuAdapter()
-	    {
-	        public void menuShown(MenuEvent e)
-	        {
-	            MenuItem[] items = changeVarMenu.getItems();
-	            for (int i = 0; i < items.length; i++) {
-	                items[i].dispose();
-	            }
-	            
-	            if(tree.getSelectionCount() == 0) return;
-	            
-	            ///TODO: change variable...
-	        }
-	    });
+//		changeVarMenu.addMenuListener(new MenuAdapter()
+//	    {
+//	        public void menuShown(MenuEvent e)
+//	        {
+//	            MenuItem[] items = changeVarMenu.getItems();
+//	            for (int i = 0; i < items.length; i++) {
+//	                items[i].dispose();
+//	            }
+//	            
+//	            if(tree.getSelectionCount() == 0) return;
+//	            
+//	            ///TODO: change variable...
+//	        }
+//	    });
 		
 		operatorVarMenu.addMenuListener(new MenuAdapter()
 	    {
@@ -445,4 +499,143 @@ public class PlotListWidget extends VisItWidget {
 	    });
 	}
 
+	public void editValue(TreeItem item) {
+		
+		//final TreeItem item = (TreeItem) e.item;
+
+		if(item == null) return;
+		if(item.getParentItem() == null) return;
+		
+		String key = item.getText(0);
+		String value = item.getText(1);
+		
+		if(key.startsWith("options") || value.startsWith("(operator)")) {
+			return;
+		}
+
+		TreeItem parentItem = item.getParentItem();
+		
+		int aPlot = -1, aOp = -1;
+		String pPlot = "", pOp = "";
+
+		if(parentItem.getText().startsWith("options")) { ///it is a plot (detect which one)
+			parentItem = parentItem.getParentItem();
+			pPlot = parentItem.getText();
+			
+			for(int i = 0; i < tree.getItemCount(); ++i) {
+				if(parentItem == tree.getItem(i)) {
+					aPlot = i;
+					break;
+				}
+			}
+		} else {
+			/// it is an operator, compute active plot and operator...
+			TreeItem parentPlotItem = parentItem.getParentItem();
+			pOp = parentItem.getText();
+			pPlot = parentPlotItem.getText();
+			
+			for(int i = 0; i < parentPlotItem.getItemCount(); ++i) {
+				if(parentItem == parentPlotItem.getItem(i)) {
+					aOp = i-1; //(because plot options take 0th spot
+					break;
+				}
+			}
+			
+			for(int i = 0; i < tree.getItemCount(); ++i) {
+				if(parentPlotItem == tree.getItem(i)) {
+					aPlot = i;
+					break;
+				}
+			}
+		}
+
+		///actual plot and operator..
+		
+	}
 }
+
+
+/*
+final String parentPlot = pPlot;
+final String parentOperator = pOp;
+
+final int activePlot = aPlot;
+final int activeOperator = aOp;
+
+if (item != null && item == lastItem [0]) {
+	
+	final Composite composite = new Composite (tree, SWT.NONE);
+	composite.setBackground (black);
+	
+	final Text text = new Text (composite, SWT.NONE);
+	final int inset = 1;
+	
+	composite.addListener (SWT.Resize, new Listener () {
+		@Override
+		public void handleEvent (Event event) {
+			Rectangle rect = composite.getClientArea ();
+			text.setBounds (rect.x + inset, rect.y + inset, rect.width - inset * 2, rect.height - inset * 2);
+		}
+	});
+	
+	Listener textListener = new Listener () {
+		@Override
+		public void handleEvent (final Event e) {
+			switch (e.type) {
+				case SWT.FocusOut:
+					item.setText(1, text.getText ());
+					composite.dispose ();
+
+					///TODO: update object <---
+//					System.out.println("plot: " + parentPlot + " " + activePlot + " " 
+//							+ parentOperator + " " + activeOperator);
+
+					///editing plot
+					if(parentOperator.length() == 0) {
+						plotlist.updatePlot(parentPlot, activePlot, item.getText(0), item.getText(1));
+					} else {
+						/// editing operator..
+						plotlist.updateOperator(parentPlot, activePlot, 
+								parentOperator, activeOperator, item.getText(0), item.getText(1));
+					}
+
+					break;
+				case SWT.Verify:
+					String newText = text.getText ();
+					String leftText = newText.substring (0, e.start);
+					String rightText = newText.substring (e.end, newText.length ());
+					GC gc = new GC (text);
+					Point size = gc.textExtent (leftText + e.text + rightText);
+					gc.dispose ();
+					size = text.computeSize (size.x, SWT.DEFAULT);
+					editor.horizontalAlignment = SWT.LEFT;
+					Rectangle itemRect = item.getBounds (), rect = tree.getClientArea ();
+					editor.minimumWidth = Math.max (size.x, itemRect.width) + inset * 2;
+					int left = itemRect.x, right = rect.x + rect.width;
+					editor.minimumWidth = Math.min (editor.minimumWidth, right - left);
+					editor.minimumHeight = size.y + inset * 2;
+					editor.layout ();
+					break;
+				case SWT.Traverse:
+					switch (e.detail) {
+						case SWT.TRAVERSE_RETURN:
+							item.setText (1, text.getText ());
+							//FALL THROUGH
+						case SWT.TRAVERSE_ESCAPE:
+							composite.dispose ();
+							e.doit = false;
+					}
+					break;
+			}
+		}
+	};
+	text.addListener (SWT.FocusOut, textListener);
+	text.addListener (SWT.Traverse, textListener);
+	text.addListener (SWT.Verify, textListener);
+	editor.setEditor (composite, item, 1);
+	text.setText (value);
+	text.selectAll ();
+	text.setFocus ();
+}
+lastItem [0] = item;
+*/

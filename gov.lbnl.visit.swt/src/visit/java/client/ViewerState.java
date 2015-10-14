@@ -124,49 +124,12 @@ public class ViewerState {
 
     /**
      * 
-     * @param o
-     * @return
+     * @param index
+     * @param key
+     * @param value
      */
-    public JsonElement convertToJsonElement(Object o) {
-        JsonElement e = null;
-
-        if (o instanceof Boolean) {
-            e = new JsonPrimitive((Boolean) o);
-        } else if (o instanceof Number) {
-            e = new JsonPrimitive((Number) o);
-        } else if (o instanceof String) {
-            e = new JsonPrimitive((String) o);
-        } else if (o instanceof JsonElement) {
-            e = ((JsonElement) o);
-        } else if (o instanceof Collection) {
-            e = convertToJsonElement(o);
-        } else {
-            e = new JsonPrimitive(o.toString());
-        }
-
-        return e;
-    }
-
-    /**
-     * 
-     * @param values
-     * @return
-     */
-    public JsonElement convertToJsonElement(Collection<?> values) {
-        JsonArray array = new JsonArray();
-
-        Iterator<?> itr = values.iterator();
-        while (itr.hasNext()) {
-            JsonElement o = convertToJsonElement(itr.next());
-
-            // Unconvertable to json..
-            if (o == null) {
-                return null;
-            }
-
-            array.add(o);
-        }
-        return array;
+    public synchronized boolean set(int index, String key, Boolean value) {
+        return set(index, key, new JsonPrimitive(value));
     }
 
     /**
@@ -175,8 +138,8 @@ public class ViewerState {
      * @param key
      * @param value
      */
-    public synchronized void set(int index, String key, Boolean value) {
-        set(index, key, new JsonPrimitive(value));
+    public synchronized boolean set(int index, String key, Number value) {
+        return set(index, key, new JsonPrimitive(value));
     }
 
     /**
@@ -185,18 +148,8 @@ public class ViewerState {
      * @param key
      * @param value
      */
-    public synchronized void set(int index, String key, Number value) {
-        set(index, key, new JsonPrimitive(value));
-    }
-
-    /**
-     * 
-     * @param index
-     * @param key
-     * @param value
-     */
-    public synchronized void set(int index, String key, String value) {
-        set(index, key, new JsonPrimitive(value));
+    public synchronized boolean set(int index, String key, String value) {
+        return set(index, key, new JsonPrimitive(value));
     }
 
     /**
@@ -206,12 +159,7 @@ public class ViewerState {
      * @param values
      */
     public synchronized boolean set(int index, String key, Collection<?> values) {
-        JsonElement e = convertToJsonElement(values);
-        if (e == null) {
-            return false;
-        }
-        set(index, key, e);
-        return true;
+        return set(index, key, values);
     }
 
     /**
@@ -220,10 +168,11 @@ public class ViewerState {
      * @param key
      * @param value
      */
-    public synchronized void set(int index, String key, JsonElement value) {
+    public synchronized boolean set(int index, String key, JsonElement value) {
         if (index >= 0 && index < states.size()) {
-            states.get(index).set(key, value);
+            return states.get(index).set(key, value);
         }
+        return false;
     }
 
     /**

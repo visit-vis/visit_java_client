@@ -40,4 +40,23 @@ public class Annotations extends VisItComponent {
 		methods.processCommands(commands);
 	}
 	
+	public void clearAll() {
+		String cmds = "";
+		for(int i = 1; i < timeSliderCount; ++i) {
+			String newName = "TimeSlider" + i;
+			cmds += "tmp = GetAnnotationObject('" + newName + "')\n";
+			cmds += "tmp.Delete()\n";
+			}
+		
+		for(int i = 1; i < text2dCount; ++i) {
+			String newName = "Text2D" + i;
+			cmds += "tmp = DeleteAnnotationObject('" + newName + "')\n";
+			cmds += "tmp.Delete()\n";
+		}
+		
+		text2dCount = 1;
+		timeSliderCount = 1;
+		methods.processCommands(cmds);
+	}
+	
 }

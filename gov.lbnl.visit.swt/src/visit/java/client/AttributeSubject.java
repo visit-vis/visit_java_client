@@ -1,6 +1,8 @@
 package visit.java.client;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -8,6 +10,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonNull;
@@ -69,6 +72,17 @@ public class AttributeSubject {
         data.add("contents", node.get("data"));
         
         callbackList = new ArrayList<AttributeSubjectCallback>();
+    }
+    
+    public JsonObject toJsonObject() {
+    	JsonObject node = new JsonObject();
+    	node.add("api", new Gson().fromJson(data.get("api").toString(), JsonObject.class));
+    	node.add("data", new Gson().fromJson(data.get("data").toString(), JsonArray.class));
+    	return node;
+    }
+    
+    public AttributeSubject deepCopy() {
+    	return new AttributeSubject(toJsonObject());
     }
     
     /**
@@ -393,6 +407,98 @@ public class AttributeSubject {
             list.add(new AttributeSubject(result));
         }
         return list;
+    }
+    
+    /**
+     * 
+     * @param o
+     * @return
+     */
+    public JsonElement convertToJsonElement(Object o) {
+        JsonElement e = null;
+
+        if (o instanceof Boolean) {
+            e = new JsonPrimitive((Boolean) o);
+        } else if (o instanceof Number) {
+            e = new JsonPrimitive((Number) o);
+        } else if (o instanceof String) {
+            e = new JsonPrimitive((String) o);
+        } else if (o instanceof JsonElement) {
+            e = ((JsonElement) o);
+        } else if (o instanceof Collection) {
+            e = convertToJsonElement(o);
+        } else {
+            e = new JsonPrimitive(o.toString());
+        }
+
+        return e;
+    }
+
+    /**
+     * 
+     * @param values
+     * @return
+     */
+    public JsonElement convertToJsonElement(Collection<?> values) {
+        JsonArray array = new JsonArray();
+
+        Iterator<?> itr = values.iterator();
+        while (itr.hasNext()) {
+            JsonElement o = convertToJsonElement(itr.next());
+
+            // Unconvertable to json..
+            if (o == null) {
+                return null;
+            }
+
+            array.add(o);
+        }
+        return array;
+    }
+
+    /**
+     * 
+     * @param index
+     * @param key
+     * @param value
+     */
+    public synchronized void set(String key, Boolean value) {
+        set(key, new JsonPrimitive(value));
+    }
+
+    /**
+     * 
+     * @param index
+     * @param key
+     * @param value
+     */
+    public synchronized void set(String key, Number value) {
+        set(key, new JsonPrimitive(value));
+    }
+
+    /**
+     * 
+     * @param index
+     * @param key
+     * @param value
+     */
+    public synchronized void set(String key, String value) {
+        set(key, new JsonPrimitive(value));
+    }
+
+    /**
+     * 
+     * @param index
+     * @param key
+     * @param values
+     */
+    public synchronized boolean set(String key, Collection<?> values) {
+        JsonElement e = convertToJsonElement(values);
+        if (e == null) {
+            return false;
+        }
+        set(key, e);
+        return true;
     }
 
     /**

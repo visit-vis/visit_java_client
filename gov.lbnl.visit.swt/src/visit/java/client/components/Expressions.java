@@ -9,12 +9,12 @@ public class Expressions extends VisItComponent {
 	}
 	
 	public void addScalarExpression(String name, String definition) {
-		String cmd = "DefineScalarExpression('" + name + "', '" + definition + "')";
+		String cmd = "DefineScalarExpression('" + name + "', '" + definition + "')\n";
 		methods.processCommands(cmd);
 	}
 	
 	public void addVectorExpression(String name, String definition) {
-		String cmd = "DefineVectorExpression('" + name + "', '" + definition + "')";
+		String cmd = "DefineVectorExpression('" + name + "', '" + definition + "')\n";
 		methods.processCommands(cmd);		
 	}
 

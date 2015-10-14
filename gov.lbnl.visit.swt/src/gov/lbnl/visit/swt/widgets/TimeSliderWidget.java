@@ -17,7 +17,7 @@ import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Composite;
 
 
-public class TimeSliderWidget extends Composite {
+public class TimeSliderWidget extends VisItWidget {
 
     private VisItSwtConnection connection;
     private TimeSlider ts;
@@ -50,7 +50,7 @@ public class TimeSliderWidget extends Composite {
      * @param conn
      */
     public TimeSliderWidget(Composite parent, int style, VisItSwtConnection conn) {
-        super(parent, style);
+        super(parent, style, conn);
 
         connection = conn;
 
@@ -78,7 +78,6 @@ public class TimeSliderWidget extends Composite {
      * Creates all of the widgets available in the UI.
      */
     private void setupUI() {
-
         // Default to a RowLayout. All of the widgets added to this Composite
         // should automatically wrap with this configured.
         RowLayout layout = new RowLayout(SWT.HORIZONTAL);

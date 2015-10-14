@@ -54,6 +54,19 @@ public class PythonConsole extends VisItComponent {
 		methods.processCommands(cmd);
 	}
 	
+	public void startRecording() {
+		methods.processCommands("ClientMethod('MacroStart')\n");
+	}
+	
+	public void stopRecording() {
+		methods.processCommands("ClientMethod('MacroEnd')\n");
+	}
+	
+	public void writeCurrentState() {
+		methods.processCommands("ClientMethod('WriteState')\n");
+	}
+	
+	
 	public boolean register(PythonConsoleCallback c) {
 		return cb.add(c);
 	}
