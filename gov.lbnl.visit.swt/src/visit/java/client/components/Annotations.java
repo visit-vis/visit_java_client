@@ -50,7 +50,7 @@ public class Annotations extends VisItComponent {
 		
 		for(int i = 1; i < text2dCount; ++i) {
 			String newName = "Text2D" + i;
-			cmds += "tmp = DeleteAnnotationObject('" + newName + "')\n";
+			cmds += "tmp = GetAnnotationObject('" + newName + "')\n";
 			cmds += "tmp.Delete()\n";
 		}
 		

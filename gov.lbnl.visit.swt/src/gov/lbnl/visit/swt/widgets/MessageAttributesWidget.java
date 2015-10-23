@@ -1,6 +1,7 @@
 package gov.lbnl.visit.swt.widgets;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyleRange;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
@@ -43,20 +44,28 @@ public class MessageAttributesWidget extends VisItWidget {
 
 			    final Color[] SeverityColors = new Color[5];			    
 			    SeverityColors[Severity.Error.ordinal()] = new Color(history.getDisplay(), new RGB(255, 0, 0));
-				SeverityColors[Severity.Warning.ordinal()] = new Color(history.getDisplay(), new RGB(255, 255, 0));
-				SeverityColors[Severity.Message.ordinal()] = new Color(history.getDisplay(), new RGB(255, 255, 255));
-				SeverityColors[Severity.ErrorClear.ordinal()] = new Color(history.getDisplay(), new RGB(255, 0, 255));
+				SeverityColors[Severity.Warning.ordinal()] = new Color(history.getDisplay(), new RGB(0, 255, 255));
+				SeverityColors[Severity.Message.ordinal()] = new Color(history.getDisplay(), new RGB(0, 0, 0));
+				SeverityColors[Severity.ErrorClear.ordinal()] = new Color(history.getDisplay(), new RGB(0, 0, 255));
 				SeverityColors[Severity.Information.ordinal()] = new Color(history.getDisplay(), new RGB(0, 255, 255));
 				
 				Display.getDefault().asyncExec(new Runnable() {
 					@Override
 					public void run() {
-						int line = history.getLineCount()-1;
-						int count = vec.length() - vec.replace("\n", "").length();
+						int len = history.getText().length();
+						
+//						int line = history.getLineCount()-1;
+//						int count = vec.length() - vec.replace("\n", "").length();
 						history.append(vec);
-						history.setLineBackground(line, count, SeverityColors[severity]);
+//						history.setLineBackground(line, count, SeverityColors[severity]);
 						// Move the cursor to the end of the console
 						history.setSelection(history.getText().length());
+						StyleRange styleRange = new StyleRange();
+						styleRange.start = len;
+						styleRange.length = vec.length();
+						//styleRange.fontStyle = SWT.BOLD;
+						styleRange.foreground = SeverityColors[severity];
+						history.setStyleRange(styleRange);
 					}
 				});
 										

@@ -237,6 +237,7 @@ public class PlotListWidget extends VisItWidget {
 		
 		vars = new Tree(comp, SWT.VIRTUAL | SWT.BORDER | 
 				SWT.H_SCROLL | SWT.V_SCROLL);
+		vars.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		vars.setHeaderVisible(true);
 		varsMenu = new Menu(vars);
 		vars.setMenu(varsMenu);
@@ -289,6 +290,7 @@ public class PlotListWidget extends VisItWidget {
 	    
 		tree = new Tree(comp, SWT.VIRTUAL | SWT.BORDER | 
 									SWT.H_SCROLL | SWT.V_SCROLL);
+		tree.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		tree.setHeaderVisible(true);
 		
 		TreeColumn column1 = new TreeColumn(tree, SWT.CENTER);
@@ -301,23 +303,23 @@ public class PlotListWidget extends VisItWidget {
 		column2.setWidth(100);
 		column2.setResizable(true);
 		
-		editorComposite = new Composite(comp, SWT.BORDER);
-		editorComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+//		editorComposite = new Composite(comp, SWT.BORDER);
+//		editorComposite.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 		
-		Button updateOps = new Button(comp, SWT.NONE);
-		updateOps.setText("Commit Changes...");
-		updateOps.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
-		
-		updateOps.addSelectionListener(new SelectionListener() {
-			
-			@Override
-			public void widgetSelected(SelectionEvent e) {
-			}
-			
-			@Override
-			public void widgetDefaultSelected(SelectionEvent e) {
-			}
-		});
+//		Button updateOps = new Button(comp, SWT.NONE);
+//		updateOps.setText("Commit Changes...");
+//		updateOps.setLayoutData(new GridData(SWT.FILL, SWT.FILL, false, false));
+//		
+//		updateOps.addSelectionListener(new SelectionListener() {
+//			
+//			@Override
+//			public void widgetSelected(SelectionEvent e) {
+//			}
+//			
+//			@Override
+//			public void widgetDefaultSelected(SelectionEvent e) {
+//			}
+//		});
 		plotsMenu = new Menu(tree);
 		
 		MenuItem deleteItem = new MenuItem(plotsMenu, SWT.NONE);
@@ -386,7 +388,7 @@ public class PlotListWidget extends VisItWidget {
 			@Override
 			public void mouseDoubleClick(MouseEvent e) {
 				TreeItem item = tree.getItem(new Point(e.x, e.y));
-				editValue(item);
+				//editValue(item);
 			}
 		});
 		
