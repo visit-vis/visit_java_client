@@ -1,6 +1,5 @@
 package visit.java.client.components;
 
-import visit.java.client.AttributeSubject;
 import visit.java.client.ViewerMethods;
 import visit.java.client.ViewerState;
 

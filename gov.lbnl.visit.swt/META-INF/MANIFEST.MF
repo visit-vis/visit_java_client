@@ -6,9 +6,10 @@ Bundle-Version: 2.1.7.20150824
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: org.eclipse.swt,
  org.eclipse.jface,
- org.eclipse.core.runtime
+ org.eclipse.core.runtime,
+ com.jcraft.jsch;bundle-version="0.1.51",
+ com.google.gson;bundle-version="2.2.4"
 Export-Package: gov.lbnl.visit.swt,
  gov.lbnl.visit.swt.widgets,
  visit.java.client,
  visit.java.client.components
-Import-Package: com.jcraft.jsch

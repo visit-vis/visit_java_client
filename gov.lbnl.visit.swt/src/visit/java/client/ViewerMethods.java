@@ -336,11 +336,26 @@ public class ViewerMethods {
      */
     public synchronized void openDatabase(String filename, int timeState,
             boolean addDefaultPlots, String forcedFileType) {
-        getMetaData(filename);
+        getMetaData(filename, timeState);
         
         mState.set(0, RPCTYPE, visitRPC.get("OpenDatabaseRPC"));
         mState.set(0, DATABASE, filename);
         mState.set(0, INTARG1, timeState);
+        mState.set(0, "boolFlag", addDefaultPlots);
+        mState.set(0, STRINGARG1, forcedFileType);
+
+        mState.notify(0);
+
+        synchronize();
+    }
+    
+    public synchronized void specialOpenDatabase(String filename, int timeState,
+            boolean addDefaultPlots, String forcedFileType, int metaTimeState) {
+        getMetaData(filename, metaTimeState);
+        
+        mState.set(0, RPCTYPE, visitRPC.get("OpenDatabaseRPC"));
+        mState.set(0, DATABASE, filename);
+        mState.set(0, INTARG1, metaTimeState);
         mState.set(0, "boolFlag", addDefaultPlots);
         mState.set(0, STRINGARG1, forcedFileType);
 
@@ -557,10 +572,10 @@ public class ViewerMethods {
      * 
      * @param database
      */
-    public synchronized void getMetaData(String database) {
+    public synchronized void getMetaData(String database, int timeState) {
         mState.set(0, RPCTYPE, visitRPC.get("RequestMetaDataRPC"));
         mState.set(0, DATABASE, database);
-        mState.set(0, "stateNumber", 0);
+        mState.set(0, "stateNumber", timeState);
         mState.notify(0);
 
         synchronize();
@@ -850,6 +865,9 @@ public class ViewerMethods {
             mutex.tryAcquire(30, TimeUnit.SECONDS);
             
         } catch (InterruptedException e) {
+            // ignore InterruptedException
+        	mutex.release(0);
+        } catch (Exception e) {
             // ignore InterruptedException
         	mutex.release(0);
         }

@@ -3,9 +3,6 @@ package visit.java.client.components;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.swt.graphics.Color;
-
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 

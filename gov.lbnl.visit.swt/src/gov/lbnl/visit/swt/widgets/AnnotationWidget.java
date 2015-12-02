@@ -9,10 +9,8 @@ import org.eclipse.swt.events.PaintEvent;
 import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
+//import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
@@ -20,10 +18,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.ScrollBar;
 import org.eclipse.swt.widgets.Spinner;
 import org.eclipse.swt.widgets.Text;
 
@@ -161,7 +156,7 @@ public class AnnotationWidget extends VisItWidget {
 
 		//image = Display.getDefault().getSystemImage(SWT.ICON_WORKING);
 		
-		final Point origin = new Point (0, 0);
+		//final Point origin = new Point (0, 0);
 		final Canvas canvas = new Canvas (mainGroup,  SWT.V_SCROLL | SWT.H_SCROLL);
 
 		canvas.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));

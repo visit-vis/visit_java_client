@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map.Entry;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.TreeEditor;
+import org.eclipse.swt.custom.SashForm;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MenuAdapter;
@@ -15,21 +15,12 @@ import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseListener;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.graphics.Color;
-import org.eclipse.swt.graphics.GC;
-import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.layout.FillLayout;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
-import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeColumn;
 import org.eclipse.swt.widgets.TreeItem;
@@ -231,7 +222,12 @@ public class PlotListWidget extends VisItWidget {
 	  }
 	
 	private void setupUI() {
-		Composite comp = new Composite(this, SWT.NONE);
+		
+		SashForm comp = new SashForm(this,SWT.VERTICAL);
+//		comp.setLayout(new FillLayout(SWT.VERTICAL));
+//		comp.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+//		
+//		Composite comp = new Composite(this, SWT.NONE);
 		//comp.setLayout(new FillLayout(SWT.VERTICAL));
 		comp.setLayout(new GridLayout(1, true));
 		
@@ -387,7 +383,7 @@ public class PlotListWidget extends VisItWidget {
 			
 			@Override
 			public void mouseDoubleClick(MouseEvent e) {
-				TreeItem item = tree.getItem(new Point(e.x, e.y));
+				//TreeItem item = tree.getItem(new Point(e.x, e.y));
 				//editValue(item);
 			}
 		});
@@ -515,41 +511,41 @@ public class PlotListWidget extends VisItWidget {
 			return;
 		}
 
-		TreeItem parentItem = item.getParentItem();
+//		TreeItem parentItem = item.getParentItem();
 		
-		int aPlot = -1, aOp = -1;
-		String pPlot = "", pOp = "";
-
-		if(parentItem.getText().startsWith("options")) { ///it is a plot (detect which one)
-			parentItem = parentItem.getParentItem();
-			pPlot = parentItem.getText();
-			
-			for(int i = 0; i < tree.getItemCount(); ++i) {
-				if(parentItem == tree.getItem(i)) {
-					aPlot = i;
-					break;
-				}
-			}
-		} else {
-			/// it is an operator, compute active plot and operator...
-			TreeItem parentPlotItem = parentItem.getParentItem();
-			pOp = parentItem.getText();
-			pPlot = parentPlotItem.getText();
-			
-			for(int i = 0; i < parentPlotItem.getItemCount(); ++i) {
-				if(parentItem == parentPlotItem.getItem(i)) {
-					aOp = i-1; //(because plot options take 0th spot
-					break;
-				}
-			}
-			
-			for(int i = 0; i < tree.getItemCount(); ++i) {
-				if(parentPlotItem == tree.getItem(i)) {
-					aPlot = i;
-					break;
-				}
-			}
-		}
+//		int aPlot = -1, aOp = -1;
+//		String pPlot = "", pOp = "";
+//
+//		if(parentItem.getText().startsWith("options")) { ///it is a plot (detect which one)
+//			parentItem = parentItem.getParentItem();
+//			pPlot = parentItem.getText();
+//			
+//			for(int i = 0; i < tree.getItemCount(); ++i) {
+//				if(parentItem == tree.getItem(i)) {
+//					aPlot = i;
+//					break;
+//				}
+//			}
+//		} else {
+//			/// it is an operator, compute active plot and operator...
+//			TreeItem parentPlotItem = parentItem.getParentItem();
+//			pOp = parentItem.getText();
+//			pPlot = parentPlotItem.getText();
+//			
+//			for(int i = 0; i < parentPlotItem.getItemCount(); ++i) {
+//				if(parentItem == parentPlotItem.getItem(i)) {
+//					aOp = i-1; //(because plot options take 0th spot
+//					break;
+//				}
+//			}
+//			
+//			for(int i = 0; i < tree.getItemCount(); ++i) {
+//				if(parentPlotItem == tree.getItem(i)) {
+//					aPlot = i;
+//					break;
+//				}
+//			}
+//		}
 
 		///actual plot and operator..
 		

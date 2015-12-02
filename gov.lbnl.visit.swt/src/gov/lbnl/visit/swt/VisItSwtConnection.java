@@ -373,7 +373,11 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         command.add("-nowin");
         command.add("-interactions");
         command.add("-hide_window");
-        command.add("-sleepmode");
+        
+        if(!LOCALHOST.equals(mHost)) {
+        	command.add("-sleepmode");
+        }
+        
         //command.add("-runcode");
         //command.add("\"while 1: import time; time.sleep(1)\"");   
         return command;
