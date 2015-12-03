@@ -690,6 +690,10 @@ public class VisItSwtConnection implements VisItInitializedCallback,
         try {
             boolean result = false;
 
+            mHost = machine;
+            mPort = port;
+            mDir = dir;
+
             if(notLaunch) {
                 // / direct connection
                 //Logger.getGlobal().info("Direct Connection");
@@ -706,10 +710,6 @@ public class VisItSwtConnection implements VisItInitializedCallback,
                 messageStatus(Severity.Information, "Launch VisIt on Remote");
                 result = launchVisItOnRemote(host, port, password, dir);
             }
-
-            mHost = machine;
-            mPort = port;
-            mDir = dir;
 
             return result;
         } catch (Exception e) {
