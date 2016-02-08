@@ -7,10 +7,10 @@
 		<groupId>ICE</groupId>
 		<artifactId>org.eclipse.ice.build</artifactId>
 		<relativePath>../ice/${pom-filename}</relativePath>
-		<version>2.1.8</version>
+		<version>2.1.8.20160208</version>
 	</parent>
 	<groupId>ICE</groupId>
 	<artifactId>gov.lbnl.visit.swt</artifactId>
-	<version>2.1.8</version>
+	<version>2.1.8.20160208</version>
 	<packaging>eclipse-plugin</packaging>
 </project>
