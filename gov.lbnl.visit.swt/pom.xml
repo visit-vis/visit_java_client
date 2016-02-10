@@ -6,10 +6,12 @@
 	<parent>
 		<groupId>gov.lbnl.visit</groupId>
 		<artifactId>gov.lbnl.visit.parent</artifactId>
-		<relativePath>../pom.xml</relativePath>
+		<relativePath>../gov.lbnl.visit.parent/pom.xml</relativePath>
 		<version>1.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>gov.lbnl.visit.swt</artifactId>
 	<packaging>eclipse-plugin</packaging>
 	<groupId>gov.lbnl.visit.swt</groupId>
+	<name>LBNL VisIt SWT Java Client</name>
+	<description>Source project for the VisIt Java Client from LBNL.</description>
 </project>

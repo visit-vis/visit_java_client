@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site>
+   <bundle id="gov.lbnl.visit.swt" version="1.0.0.qualifier">
+      <category name="gov.lbnl.visit"/>
+   </bundle>
+   <category-def name="gov.lbnl.visit" label="VisIt Java Client"/>
+</site>
