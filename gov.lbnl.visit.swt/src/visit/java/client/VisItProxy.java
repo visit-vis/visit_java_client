@@ -179,7 +179,6 @@ public class VisItProxy {
                     socket.getInputStream());
 
             String headerstr = gson.toJson(header);
-
             writer.write(headerstr);
             writer.flush();
 
@@ -208,6 +207,7 @@ public class VisItProxy {
             JsonArray visitRpc = jo.get("rpc_array").getAsJsonArray();
             
             visitRPC = new HashMap<String, Integer>();
+            
             for(int i = 0; i < visitRpc.size(); ++i) {
                 visitRPC.put(visitRpc.get(i).getAsString(), i);
             }
@@ -262,8 +262,8 @@ public class VisItProxy {
             // read 100 bytes
             InputStreamReader isr = new InputStreamReader(
                     outputSocket.getInputStream());
-            isr.read(cbuf);
-
+            int len = isr.read(cbuf);
+            if(len < 100) isr.read(cbuf);
             cbuf[0] = ASCIIFORMAT;
 
             for (int i = 0; i < visitSecurityKey.length(); ++i) {
@@ -590,7 +590,7 @@ public class VisItProxy {
                     if(checkVersion == false) {
                         /// assuming that the initial read is big enough to get
                         /// the first tag..
-                        if(!inputBuffer.toString().startsWith("[\"startTag\"]")) {
+                        if(! (inputBuffer.toString().indexOf("[\"startTag\"]") >= 0) ) {
                             version1 = true;
                         }
                         checkVersion = true;

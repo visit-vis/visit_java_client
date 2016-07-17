@@ -193,6 +193,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
     	for(int i = 0; i < vmscbList.size(); ++i) {
     		vmscbList.get(i).message(severity, message);
     	}
+    	//System.out.println("Msg:" + message);
     }
     /**
      * 
@@ -485,7 +486,7 @@ public class VisItSwtConnection implements VisItInitializedCallback,
             }
         } else {
             // connect to localhost
-            session = jsch.getSession(mGatewayUser, LOCALHOST, mGatewayPort);
+            session = jsch.getSession(mGatewayUser.length() == 0 ? proxyInfo[0] : mGatewayUser, LOCALHOST, mGatewayPort);
             externalSession = false;
             session.setUserInfo(ui);
             session.connect();

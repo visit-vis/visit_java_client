@@ -98,11 +98,15 @@ public class VisItDemo extends Composite {
 
 	    /// set up initial connection..
 
-	    if(session == null) {
+	    //conn.launch("localhost", 9010, "notset", "", true);
+	    conn.setGateway("train49@gordon.sdsc.xsede.org", 9012);
+	    conn.launch("train49@10.5.104.120", 9015, "notset", "/home/train49/visit/bin", false);
+	    
+	    /*if(session == null) {
 	    	conn.launch("localhost", -1, password, dir, false);
 	    } else {
 	    	conn.launch(session, dir, port, password);
-	    }
+	    }*/
 
 	    /// set up connection for the first window..
 	    try {
@@ -597,8 +601,9 @@ public class VisItDemo extends Composite {
 		demo.setLayoutData(new FillLayout());
 		
 		try {
-			demo.launch(null, "/Users/hari/Code/Work/VisIt/install/bin", "user");
-			demo.OpenDatabase("/Users/hari/visit_data_files/noise.silo");
+			//demo.launch(null, "/Users/hari/Code/Work/VisIt/install/bin", "user");
+			//demo.OpenDatabase("/Users/hari/visit_data_files/noise.silo");
+			demo.launch(null, "", "train49");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
