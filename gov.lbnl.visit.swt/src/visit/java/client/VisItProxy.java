@@ -4,17 +4,9 @@
  */
 package visit.java.client;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.jcraft.jsch.JSchException;
-import com.jcraft.jsch.Session;
-
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.StreamCorruptedException;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.net.ConnectException;
 import java.net.ServerSocket;
@@ -23,9 +15,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.Semaphore;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.jcraft.jsch.JSchException;
+import com.jcraft.jsch.Session;
 
 /**
  * 
@@ -33,283 +32,283 @@ import java.util.logging.Logger;
  */
 public class VisItProxy {
 
-    /**
-     * create interface callback
-     */
-    public interface VisItInitializedCallback {
-        public void initialized();
-    }
+	/**
+	 * create interface callback
+	 */
+	public interface VisItInitializedCallback {
+		public void initialized();
+	}
 
-    /**
-     * 
-     */
-    Semaphore sem = new Semaphore(0);
+	/**
+	 * 
+	 */
+	Semaphore sem = new Semaphore(0);
 
-    /**
-     * 
-     */
-    public static final int BUFSIZE = 4096;
+	/**
+	 * 
+	 */
+	public static final int BUFSIZE = 4096;
 
-    /**
-     * 
-     */
-    private String visitHost, visitPort;
+	/**
+	 * 
+	 */
+	private String visitHost, visitPort;
 
-    /**
-     * 
-     */
-    private String visitSecurityKey;
+	/**
+	 * 
+	 */
+	private String visitSecurityKey;
 
-    /**
-     * 
-     */
-    private Map<String, Integer> visitRPC;
-    
-    /**
-     * 
-     */
-    private InputStreamReader inputConnection;
+	/**
+	 * 
+	 */
+	private Map<String, Integer> visitRPC;
 
-    /**
-     * 
-     */
-    private OutputStreamWriter outputConnection;
+	/**
+	 * 
+	 */
+	private InputStreamReader inputConnection;
 
-    /**
-     * 
-     */
-    private Socket inputSocket, outputSocket;
+	/**
+	 * 
+	 */
+	private OutputStreamWriter outputConnection;
 
-    /**
-     * 
-     */
-    private Thread thread;
-    private VisItThread threadRunnable;
+	/**
+	 * 
+	 */
+	private Socket inputSocket, outputSocket;
 
-    /**
-     * 
-     */
-    private static final byte ASCIIFORMAT = 0;
+	/**
+	 * 
+	 */
+	private Thread thread;
+	private VisItThread threadRunnable;
 
-    /**
-     * 
-     */
-    private ViewerState state;
+	/**
+	 * 
+	 */
+	private static final byte ASCIIFORMAT = 0;
 
-    /**
-     * 
-     */
-    private ViewerMethods methods;
+	/**
+	 * 
+	 */
+	private ViewerState state;
 
-    /**
-     * 
-     */
-    private Header header = new Header();
+	/**
+	 * 
+	 */
+	private ViewerMethods methods;
 
-    /**
-     * 
-     */
-    private VisItInitializedCallback callback = null;
-    
-    /**
-     * 
-     */
-    boolean mUseTunnel = false;
-    
-    /**
-     * 
-     */
-    Session mTunnelSession = null;
-    
-    /**
-     * 
-     */
-    private static final String LOCALHOST = "localhost";
-    
-    /**
-     * The constructor
-     */
-    public VisItProxy() {
-    }
+	/**
+	 * 
+	 */
+	private Header header = new Header();
 
-    /**
-     * 
-     */
-    public void setParameters(String userName, String instanceId,
-            String dataType, int windowWidth, int windowHeight, int windowId) {
-        header.setName(userName);
-        header.setPassword(instanceId);
-        header.setCanRender(dataType);
-        header.setGeometry(windowWidth + "x" + windowHeight);
-        header.windowIds = new ArrayList<Integer>();
-        header.windowIds.add(windowId);
+	/**
+	 * 
+	 */
+	private VisItInitializedCallback callback = null;
 
-    }
+	/**
+	 * 
+	 */
+	boolean mUseTunnel = false;
 
-    public void setTunneling(boolean tunnel, Session ts) {
-        mUseTunnel = tunnel;
-        mTunnelSession = ts;
-    }
+	/**
+	 * 
+	 */
+	Session mTunnelSession = null;
 
-    private Integer findRandomOpenPortOnAllLocalInterfaces() {
-    	try {
-	    	ServerSocket socket = new ServerSocket(0);
-	    	int lport = socket.getLocalPort();
-	    	socket.close();
-	    	return lport;
-    	} catch(IOException e) {
-    		
-    	}
+	/**
+	 * 
+	 */
+	private static final String LOCALHOST = "localhost";
+
+	/**
+	 * The constructor
+	 */
+	public VisItProxy() {
+	}
+
+	/**
+	 * 
+	 */
+	public void setParameters(String userName, String instanceId,
+			String dataType, int windowWidth, int windowHeight, int windowId) {
+		header.setName(userName);
+		header.setPassword(instanceId);
+		header.setCanRender(dataType);
+		header.setGeometry(windowWidth + "x" + windowHeight);
+		header.windowIds = new ArrayList<Integer>();
+		header.windowIds.add(windowId);
+
+	}
+
+	public void setTunneling(boolean tunnel, Session ts) {
+		mUseTunnel = tunnel;
+		mTunnelSession = ts;
+	}
+
+	private Integer findRandomOpenPortOnAllLocalInterfaces() {
+		try {
+			ServerSocket socket = new ServerSocket(0);
+			int lport = socket.getLocalPort();
+			socket.close();
+			return lport;
+		} catch (IOException e) {
+
+		}
 		return -1;
-      }
-    
-    /**
-     * @param host
-     * @param port
-     * @param password
-     * @return
-     */
-    private boolean handshake(String host, int port) {
-        try {
-            Gson gson = new Gson();
+	}
 
-            Socket socket = new Socket(mUseTunnel ? LOCALHOST : host, port);
-            OutputStreamWriter writer = new OutputStreamWriter(
-                    socket.getOutputStream());
-            InputStreamReader reader = new InputStreamReader(
-                    socket.getInputStream());
+	/**
+	 * @param host
+	 * @param port
+	 * @param password
+	 * @return
+	 */
+	private boolean handshake(String host, int port) {
+		try {
+			Gson gson = new Gson();
 
-            String headerstr = gson.toJson(header);
+			Socket socket = new Socket(mUseTunnel ? LOCALHOST : host, port);
+			OutputStreamWriter writer = new OutputStreamWriter(
+					socket.getOutputStream());
+			InputStreamReader reader = new InputStreamReader(
+					socket.getInputStream());
 
-            writer.write(headerstr);
-            writer.flush();
+			String headerstr = gson.toJson(header);
 
-            String message = "";
-            
-            int len = 0;
-            do {
-                char[] cbuf = new char[1024];
-                len = reader.read(cbuf);
-                
-                if(len <= 0) {
-                    break;
-                }
-                
-                String msg = new String(cbuf, 0, len);
-                message += msg;
-                
-            } while(len > 0);
+			writer.write(headerstr);
+			writer.flush();
 
-            JsonElement e = gson.fromJson(message, JsonElement.class);
-            JsonObject jo = e.getAsJsonObject();
+			String message = "";
 
-            visitHost = jo.get("host").getAsString();
-            visitPort = jo.get("port").getAsString();
-            visitSecurityKey = jo.get("securityKey").getAsString();
-            JsonArray visitRpc = jo.get("rpc_array").getAsJsonArray();
-            
-            visitRPC = new HashMap<String, Integer>();
-            for(int i = 0; i < visitRpc.size(); ++i) {
-                visitRPC.put(visitRpc.get(i).getAsString(), i);
-            }
-            
-            if (mUseTunnel) {
-            	String remotePort = visitPort;
-            	visitPort = Integer.toString(findRandomOpenPortOnAllLocalInterfaces());
-                mTunnelSession.setPortForwardingL(
-                        Integer.parseInt(visitPort), LOCALHOST,
-                        Integer.parseInt(remotePort));
-            }
+			int len = 0;
+			do {
+				char[] cbuf = new char[1024];
+				len = reader.read(cbuf);
 
-            socket.close();
+				if (len <= 0) {
+					break;
+				}
 
-            return true;
-        } catch (ConnectException e) {
-            ///throw exception when connection fails..
-            Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
-        } catch (Exception e) {
-            ///throw exception when connection fails..
-            Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
-        }
-        return false;
-    }
+				String msg = new String(cbuf, 0, len);
+				message += msg;
 
-    /**
-     * @param host
-     * @param port
-     * @param password
-     * @param type
-     * @return
-     */
-    public boolean connect(String host, int port) {
-        if (!handshake(host, port)) {
-            return false;
-        }
-        try {
+			} while (len > 0);
 
-            inputSocket = new Socket(mUseTunnel ? LOCALHOST : visitHost,
-                    Integer.valueOf(visitPort));
-            inputConnection = new InputStreamReader(
-                    inputSocket.getInputStream());
+			JsonElement e = gson.fromJson(message, JsonElement.class);
+			JsonObject jo = e.getAsJsonObject();
 
-            outputSocket = new Socket(mUseTunnel ? LOCALHOST : visitHost,
-                    Integer.valueOf(visitPort));
-            outputConnection = new OutputStreamWriter(
-                    outputSocket.getOutputStream());
+			visitHost = jo.get("host").getAsString();
+			visitPort = jo.get("port").getAsString();
+			visitSecurityKey = jo.get("securityKey").getAsString();
+			JsonArray visitRpc = jo.get("rpc_array").getAsJsonArray();
 
-            // Handle initial connection
-            char[] cbuf = new char[1024];
+			visitRPC = new HashMap<String, Integer>();
+			for (int i = 0; i < visitRpc.size(); ++i) {
+				visitRPC.put(visitRpc.get(i).getAsString(), i);
+			}
 
-            // read 100 bytes
-            InputStreamReader isr = new InputStreamReader(
-                    outputSocket.getInputStream());
-            isr.read(cbuf);
+			if (mUseTunnel) {
+				String remotePort = visitPort;
+				visitPort = Integer
+						.toString(findRandomOpenPortOnAllLocalInterfaces());
+				mTunnelSession.setPortForwardingL(Integer.parseInt(visitPort),
+						LOCALHOST, Integer.parseInt(remotePort));
+			}
 
-            cbuf[0] = ASCIIFORMAT;
+			socket.close();
 
-            for (int i = 0; i < visitSecurityKey.length(); ++i) {
-                cbuf[6 + 10 + i] = visitSecurityKey.charAt(i);
-            }
+			return true;
+		} catch (ConnectException e) {
+			/// throw exception when connection fails..
+			Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
+		} catch (Exception e) {
+			/// throw exception when connection fails..
+			Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
+		}
+		return false;
+	}
 
-            OutputStreamWriter osw = new OutputStreamWriter(
-                    inputSocket.getOutputStream());
-            osw.write(cbuf);
-            osw.flush();
+	/**
+	 * @param host
+	 * @param port
+	 * @param password
+	 * @param type
+	 * @return
+	 */
+	public boolean connect(String host, int port) {
+		if (!handshake(host, port)) {
+			return false;
+		}
+		try {
 
-            // End - Handle initial connection
-            state = new ViewerState();
+			inputSocket = new Socket(mUseTunnel ? LOCALHOST : visitHost,
+					Integer.valueOf(visitPort));
+			inputConnection = new InputStreamReader(
+					inputSocket.getInputStream());
 
-            state.setConnection(outputConnection);
+			outputSocket = new Socket(mUseTunnel ? LOCALHOST : visitHost,
+					Integer.valueOf(visitPort));
+			outputConnection = new OutputStreamWriter(
+					outputSocket.getOutputStream());
 
-            threadRunnable = new VisItThread(inputConnection);
-            thread = new Thread(threadRunnable);
-            thread.setDaemon(true);
-            thread.start();
+			// Handle initial connection
+			char[] cbuf = new char[1024];
 
-            /** ! block until all data is in */
-            sem.acquire();
+			// read 100 bytes
+			InputStreamReader isr = new InputStreamReader(
+					outputSocket.getInputStream());
+			isr.read(cbuf);
 
-            if (callback != null) {
-                callback.initialized();
-            }
-            
-            methods = new ViewerMethods(state, visitRPC);
+			cbuf[0] = ASCIIFORMAT;
 
-            //state has synched at this point..
-            
-        } catch (Exception e) {
-            Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
-            return false;
-        }
-        return true;
-    }
+			for (int i = 0; i < visitSecurityKey.length(); ++i) {
+				cbuf[6 + 10 + i] = visitSecurityKey.charAt(i);
+			}
 
-    public void disconnect() {
-    	
-        getViewerMethods().close();
-        
-        if(mUseTunnel) {
-    		try {
+			OutputStreamWriter osw = new OutputStreamWriter(
+					inputSocket.getOutputStream());
+			osw.write(cbuf);
+			osw.flush();
+
+			// End - Handle initial connection
+			state = new ViewerState();
+
+			state.setConnection(outputConnection);
+
+			threadRunnable = new VisItThread(inputConnection);
+			thread = new Thread(threadRunnable);
+			thread.setDaemon(true);
+			thread.start();
+
+			/** ! block until all data is in */
+			sem.acquire();
+
+			if (callback != null) {
+				callback.initialized();
+			}
+
+			methods = new ViewerMethods(state, visitRPC);
+
+			// state has synched at this point..
+
+		} catch (Exception e) {
+			Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
+			return false;
+		}
+		return true;
+	}
+
+	public void disconnect() {
+
+		getViewerMethods().close();
+
+		if (mUseTunnel) {
+			try {
 				mTunnelSession.delPortForwardingL(Integer.parseInt(visitPort));
 			} catch (NumberFormatException e) {
 				// TODO Auto-generated catch block
@@ -318,296 +317,310 @@ public class VisItProxy {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-    	}
-        
-        threadRunnable.quitThread();
-        thread.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
+		}
 
-            @Override
-            public void uncaughtException(Thread arg0, Throwable arg1) {
-                /// if there is an uncaught exception ignore it..
-            }
-        });
+		threadRunnable.quitThread();
+		thread.setUncaughtExceptionHandler(new UncaughtExceptionHandler() {
 
-        try {
-            thread.join();
-        } catch (InterruptedException e) {
-            /// wait for disconnection to end the second thread..
-        }
-    }
+			@Override
+			public void uncaughtException(Thread arg0, Throwable arg1) {
+				/// if there is an uncaught exception ignore it..
+			}
+		});
 
-    /**
-     * @return
-     */
-    public ViewerState getViewerState() {
-        return state;
-    }
+		try {
+			thread.join();
+		} catch (InterruptedException e) {
+			/// wait for disconnection to end the second thread..
+		}
+	}
 
-    /**
-     * @return
-     */
-    public ViewerMethods getViewerMethods() {
-        return methods;
-    }
+	/**
+	 * @return
+	 */
+	public ViewerState getViewerState() {
+		return state;
+	}
 
-    /**
-     * 
-     * @param cb
-     */
-    public void setInitializedCallback(VisItInitializedCallback cb) {
-        callback = cb;
-    }
+	/**
+	 * @return
+	 */
+	public ViewerMethods getViewerMethods() {
+		return methods;
+	}
 
-    /**
-     *
-     */
-    class Header {
-        private String name;
-        private String geometry;
-        private String password;
-        private String canRender;
-        List<Integer> windowIds;
-        
-        public String getCanRender() {
-            return canRender;
-        }
-        
-        public void setCanRender(String canRender) {
-            this.canRender = canRender;
-        }
-        
-        public String getPassword() {
-            return password;
-        }
-        
-        public void setPassword(String password) {
-            this.password = password;
-        }
-        
-        public String getGeometry() {
-            return geometry;
-        }
-        
-        public void setGeometry(String geometry) {
-            this.geometry = geometry;
-        }
-        
-        public String getName() {
-            return name;
-        }
-        
-        public void setName(String name) {
-            this.name = name;
-        }
-    }
+	/**
+	 * 
+	 * @param cb
+	 */
+	public void setInitializedCallback(VisItInitializedCallback cb) {
+		callback = cb;
+	}
 
-    /**
-     *
-     */
-    class VisItThread implements Runnable {
-        private InputStreamReader inputConnection;
-        private Gson gson;
-        private boolean qThread;
-        private static final int MAX_STATES = 135;
+	/**
+	 *
+	 */
+	class Header {
+		private String name;
+		private String geometry;
+		private String password;
+		private String canRender;
+		List<Integer> windowIds;
 
-        VisItThread(InputStreamReader i) {
-            gson = new Gson();
-            inputConnection = i;
-            qThread = false;
-        }
+		public String getCanRender() {
+			return canRender;
+		}
 
-        void quitThread() {
-            qThread = true;
-            try {
-                inputConnection.close();
-            } catch (IOException e) {
-                ///log quit thread..
-                Logger.getGlobal().log(Level.INFO, e.getMessage(), e);
-            }
-        }
+		public void setCanRender(String canRender) {
+			this.canRender = canRender;
+		}
 
-        private int count(String str, String findStr) {
-            int lastIndex = 0;
-            int count = 0;
+		public String getPassword() {
+			return password;
+		}
 
-            while (lastIndex != -1) {
+		public void setPassword(String password) {
+			this.password = password;
+		}
 
-                lastIndex = str.indexOf(findStr, lastIndex);
+		public String getGeometry() {
+			return geometry;
+		}
 
-                if (lastIndex != -1) {
-                    count++;
-                    lastIndex += findStr.length();
-                }
-            }
+		public void setGeometry(String geometry) {
+			this.geometry = geometry;
+		}
 
-            return count;
-        }
+		public String getName() {
+			return name;
+		}
 
-        private void parseEntry(StringBuilder inputBuffer, StringBuilder partialEntry) {
-            ///read between startTag & endTag..
-            ///all tags should be filled when they are of the form
-            ///["startTag"]JSON+["endTag"]
-            
-            String sTag = "[\"startTag\"]";
-            String eTag = "[\"endTag\"]";
-            
-            int startTag = inputBuffer.indexOf(sTag);
-            int endTag = inputBuffer.indexOf(eTag);
-            
-            while(true) {
-                
-                if(startTag < 0 || endTag < 0) {
-                    return;
-                }
+		public void setName(String name) {
+			this.name = name;
+		}
+	}
 
-                /// read entire start tag entry..
-                int startMarker = inputBuffer.indexOf("{", startTag);
-                int endMarker = inputBuffer.lastIndexOf("}", endTag)+1;
-                
-                String entry = inputBuffer.substring(startMarker, endMarker).trim();
-                entry = entry.replace("\\\"", "");
-                
-                try {
-                    
-                    JsonElement el = gson.fromJson(entry,JsonElement.class);
-                    JsonObject jo = el.getAsJsonObject();
+	/**
+	 *
+	 */
+	class VisItThread implements Runnable {
+		private InputStreamReader inputConnection;
+		private Gson gson;
+		private boolean qThread;
+		private static final int MAX_STATES = 135;
 
-                    // update state..
-                    VisItProxy.this.state.update(jo);
-                }catch(Exception e) {
-                    System.out.println("failed to parse:" + entry);
-                    Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
-                }
-                
-                if (VisItProxy.this.state.getStates().size() == MAX_STATES) {
-                    sem.release();
-                }
-                
-                ///end of the code match..
-                int endSequence = endTag + eTag.length();
-                inputBuffer.delete(0, endSequence);
+		VisItThread(InputStreamReader i) {
+			gson = new Gson();
+			inputConnection = i;
+			qThread = false;
+		}
 
-                startTag = inputBuffer.indexOf(sTag);
-                endTag = inputBuffer.indexOf(eTag);
-            }
-        }
+		void quitThread() {
+			qThread = true;
+			try {
+				inputConnection.close();
+			} catch (IOException e) {
+				/// log quit thread..
+				Logger.getGlobal().log(Level.INFO, e.getMessage(), e);
+			}
+		}
 
-        private int[] parseEntryHelper(int si, int ei, StringBuilder inputBuffer, StringBuilder partialEntry) {
-            
-            int mnsi = si;
-            int mnei = ei;
-            
-            if (mnsi < 0 && mnei >= 0) {                
-                mnei += "}".length();
-                partialEntry.append(inputBuffer.subSequence(0, mnei));
-                inputBuffer.delete(0, mnei);
-            } else if (mnsi >= 0 && mnei < 0) {
-                mnsi += "{".length();
-                partialEntry.append(inputBuffer.subSequence(0, mnsi));
-                inputBuffer.delete(0, mnsi);
-            } else if (mnsi < mnei) {
-                mnsi += "{".length();
-                partialEntry.append(inputBuffer.subSequence(0, mnsi));
-                inputBuffer.delete(0, mnsi);
-            } else {
-                mnei += "}".length();
-                partialEntry.append(inputBuffer.subSequence(0, mnei));
-                inputBuffer.delete(0, mnei); 
-            }
-            return new int[] { mnsi, mnei };
-        }
-                
-        /// version 1?
-        private void parseEntry2(StringBuilder inputBuffer, StringBuilder partialEntry) {
-            // for now JSON parser has to start with object..
-            int mnsi = inputBuffer.indexOf("{");
-            int mnei = inputBuffer.indexOf("}");
+		private int count(String str, String findStr) {
+			int lastIndex = 0;
+			int count = 0;
 
-            while (mnsi >= 0 || mnei >= 0) {
-            
-                int[] res = parseEntryHelper(mnsi, mnei, inputBuffer, partialEntry);
-                
-                mnsi = res[0];
-                mnei = res[1];
-                
-                String tmp = partialEntry.toString().trim();
+			while (lastIndex != -1) {
 
-                if (count(tmp, "{") > 0 &&
-                    count(tmp, "{") == count(tmp, "}")) {
-                    try {
-                        partialEntry.setLength(0);
-                        tmp = tmp.replace("\\\"", "");
-                        
-                        JsonElement el = gson.fromJson(tmp, JsonElement.class);
-                        JsonObject jo = el.getAsJsonObject();
-                        
-                        // update state..
-                        VisItProxy.this.state.update(jo);
-                    } catch (Exception e) {
-                        /// log this failure to parse..
-                        Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
-                    }
-                    
-                    if (VisItProxy.this.state.getStates().size() == MAX_STATES) {
-                        sem.release();
-                    }
-                }
+				lastIndex = str.indexOf(findStr, lastIndex);
 
-                mnsi = inputBuffer.indexOf("{");
-                mnei = inputBuffer.indexOf("}");
-            }
-        }
-        
-        /**
-         * 
-         */
-        @Override
-        public void run() {
+				if (lastIndex != -1) {
+					count++;
+					lastIndex += findStr.length();
+				}
+			}
 
-            // stitches together one map_node entry
-            StringBuilder partialEntry = new StringBuilder("");
-            
-            // holds input data buffer
-            StringBuilder inputBuffer = new StringBuilder("");
-            char[] data = new char[VisItProxy.BUFSIZE];
-            
-            boolean checkVersion = false;
-            boolean version1 = false;
-            
-            try {
-                while (true) {
+			return count;
+		}
 
-                    int len = 0;
-                    len = inputConnection.read(data);
+		private void parseEntry(StringBuilder inputBuffer,
+				StringBuilder partialEntry) {
+			/// read between startTag & endTag..
+			/// all tags should be filled when they are of the form
+			/// ["startTag"]JSON+["endTag"]
 
-                    if (qThread || len <= 0 || data == null) {
-                    	Logger.getGlobal().log(Level.INFO, "VisIt Buffer returned empty");
-                    	break;
-                    }
-                    
-                    inputBuffer.append(data, 0, len);
-                    
-                    /// detect version...
-                    if(checkVersion == false) {
-                        /// assuming that the initial read is big enough to get
-                        /// the first tag..
-                        if(!inputBuffer.toString().startsWith("[\"startTag\"]")) {
-                            version1 = true;
-                        }
-                        checkVersion = true;
-                    }
-                    
-                    if(version1) { 
-                        parseEntry2(inputBuffer, partialEntry);
-                    } else {
-                        parseEntry(inputBuffer, partialEntry);
-                    }
-                    
-                }
-            } catch (Exception e) {
-                ///catch Exception and Quit Thread
-                //Logger.getGlobal().log(Level.INFO, e.getMessage(), e);
-            }
-        }
-    }
+			String sTag = "[\"startTag\"]";
+			String eTag = "[\"endTag\"]";
+
+			int startTag = inputBuffer.indexOf(sTag);
+			int endTag = inputBuffer.indexOf(eTag);
+
+			while (true) {
+
+				if (startTag < 0 || endTag < 0) {
+					return;
+				}
+
+				/// read entire start tag entry..
+				int startMarker = inputBuffer.indexOf("{", startTag);
+				int endMarker = inputBuffer.lastIndexOf("}", endTag) + 1;
+
+				String entry = inputBuffer.substring(startMarker, endMarker)
+						.trim();
+				entry = entry.replace("\\\"", "");
+
+				// Add escapes to any single backslashes, as VisIt may export
+				// its internal paths for Windows without escaping the backslash
+				// delimiter. Replace each \ with \\, then repair the correctly
+				// escaped "\\"s that were turned into \\\\.
+				entry = entry.replace("\\", "\\\\");
+				entry = entry.replace("\\\\\\\\", "\\\\");
+
+				try {
+
+					JsonElement el = gson.fromJson(entry, JsonElement.class);
+					JsonObject jo = el.getAsJsonObject();
+
+					// update state..
+					VisItProxy.this.state.update(jo);
+				} catch (Exception e) {
+					System.out.println("failed to parse:" + entry);
+					Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
+				}
+
+				if (VisItProxy.this.state.getStates().size() == MAX_STATES) {
+					sem.release();
+				}
+
+				/// end of the code match..
+				int endSequence = endTag + eTag.length();
+				inputBuffer.delete(0, endSequence);
+
+				startTag = inputBuffer.indexOf(sTag);
+				endTag = inputBuffer.indexOf(eTag);
+			}
+		}
+
+		private int[] parseEntryHelper(int si, int ei,
+				StringBuilder inputBuffer, StringBuilder partialEntry) {
+
+			int mnsi = si;
+			int mnei = ei;
+
+			if (mnsi < 0 && mnei >= 0) {
+				mnei += "}".length();
+				partialEntry.append(inputBuffer.subSequence(0, mnei));
+				inputBuffer.delete(0, mnei);
+			} else if (mnsi >= 0 && mnei < 0) {
+				mnsi += "{".length();
+				partialEntry.append(inputBuffer.subSequence(0, mnsi));
+				inputBuffer.delete(0, mnsi);
+			} else if (mnsi < mnei) {
+				mnsi += "{".length();
+				partialEntry.append(inputBuffer.subSequence(0, mnsi));
+				inputBuffer.delete(0, mnsi);
+			} else {
+				mnei += "}".length();
+				partialEntry.append(inputBuffer.subSequence(0, mnei));
+				inputBuffer.delete(0, mnei);
+			}
+			return new int[] { mnsi, mnei };
+		}
+
+		/// version 1?
+		private void parseEntry2(StringBuilder inputBuffer,
+				StringBuilder partialEntry) {
+			// for now JSON parser has to start with object..
+			int mnsi = inputBuffer.indexOf("{");
+			int mnei = inputBuffer.indexOf("}");
+
+			while (mnsi >= 0 || mnei >= 0) {
+
+				int[] res = parseEntryHelper(mnsi, mnei, inputBuffer,
+						partialEntry);
+
+				mnsi = res[0];
+				mnei = res[1];
+
+				String tmp = partialEntry.toString().trim();
+
+				if (count(tmp, "{") > 0 && count(tmp, "{") == count(tmp, "}")) {
+					try {
+						partialEntry.setLength(0);
+						tmp = tmp.replace("\\\"", "");
+
+						JsonElement el = gson.fromJson(tmp, JsonElement.class);
+						JsonObject jo = el.getAsJsonObject();
+
+						// update state..
+						VisItProxy.this.state.update(jo);
+					} catch (Exception e) {
+						/// log this failure to parse..
+						Logger.getGlobal().log(Level.SEVERE, e.getMessage(), e);
+					}
+
+					if (VisItProxy.this.state.getStates()
+							.size() == MAX_STATES) {
+						sem.release();
+					}
+				}
+
+				mnsi = inputBuffer.indexOf("{");
+				mnei = inputBuffer.indexOf("}");
+			}
+		}
+
+		/**
+		 * 
+		 */
+		@Override
+		public void run() {
+
+			// stitches together one map_node entry
+			StringBuilder partialEntry = new StringBuilder("");
+
+			// holds input data buffer
+			StringBuilder inputBuffer = new StringBuilder("");
+			char[] data = new char[VisItProxy.BUFSIZE];
+
+			boolean checkVersion = false;
+			boolean version1 = false;
+
+			try {
+				while (true) {
+
+					int len = 0;
+					len = inputConnection.read(data);
+
+					if (qThread || len <= 0 || data == null) {
+						Logger.getGlobal().log(Level.INFO,
+								"VisIt Buffer returned empty");
+						break;
+					}
+
+					inputBuffer.append(data, 0, len);
+
+					/// detect version...
+					if (checkVersion == false) {
+						/// assuming that the initial read is big enough to get
+						/// the first tag..
+						if (!inputBuffer.toString()
+								.startsWith("[\"startTag\"]")) {
+							version1 = true;
+						}
+						checkVersion = true;
+					}
+
+					if (version1) {
+						parseEntry2(inputBuffer, partialEntry);
+					} else {
+						parseEntry(inputBuffer, partialEntry);
+					}
+
+				}
+			} catch (Exception e) {
+				/// catch Exception and Quit Thread
+				// Logger.getGlobal().log(Level.INFO, e.getMessage(), e);
+			}
+		}
+	}
 }
